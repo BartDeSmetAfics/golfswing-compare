@@ -37,6 +37,9 @@
     "tsx": "^4.23.12",
     "typescript": "^5"
   },
+  "engines": {
+    "node": ">=20.19.0"
+  },
   "allowScripts": {
     "prisma@7.9.1": true,
     "@prisma/engines@7.9.1": true,
