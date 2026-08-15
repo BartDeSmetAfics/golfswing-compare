@@ -3,8 +3,10 @@ import withPWA from "@ducanh2912/next-pwa";
 
 const nextConfig: NextConfig = {
   turbopack: {},
+  experimental: {
+    middlewareClientMaxBodySize: 500 * 1024 * 1024, // 500MB for video uploads
+  },
   images: {
-    // Allow R2 presigned URLs (any hostname)
     remotePatterns: [
       { protocol: "https", hostname: "**.r2.cloudflarestorage.com" },
     ],
