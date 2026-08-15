@@ -28,18 +28,25 @@ export default function RecordPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ clubType: "IRON", videoMimeType: mimeType }),
       });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(`Server error ${res.status}: ${body.error ?? "unknown"}`);
+      }
       const { swingId: id, uploadUrl } = await res.json() as { swingId: string; uploadUrl: string };
       setSwingId(id);
 
-      await fetch(uploadUrl, {
+      const r2Res = await fetch(uploadUrl, {
         method: "PUT",
         body: blob,
         headers: { "Content-Type": mimeType },
       });
+      if (!r2Res.ok) {
+        throw new Error(`R2 upload failed ${r2Res.status}: ${await r2Res.text()}`);
+      }
 
       setVideoBlob(blob);
-    } catch {
-      setError("Upload failed — please try again.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Upload failed — please try again.");
     } finally {
       setUploading(false);
     }
