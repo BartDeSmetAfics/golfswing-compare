@@ -2,6 +2,7 @@
 
 import { useSession } from "next-auth/react";
 import Link from "next/link";
+import { useEffect, useState } from "react";
 
 function getInitials(name?: string | null, email?: string | null): string {
   if (name) {
@@ -21,7 +22,18 @@ interface AppHeaderProps {
 
 export default function AppHeader({ backHref, backLabel, title }: AppHeaderProps) {
   const { data: session } = useSession();
+  const [avatarSrc, setAvatarSrc] = useState<string | null>(null);
   const initials = getInitials(session?.user?.name, session?.user?.email);
+
+  useEffect(() => {
+    if (!session?.user) return;
+    fetch("/api/profile")
+      .then((r) => r.json())
+      .then((data: { avatarBase64?: string | null }) => {
+        if (data.avatarBase64) setAvatarSrc(data.avatarBase64);
+      })
+      .catch(() => {});
+  }, [session?.user]);
 
   return (
     <header className="flex items-center justify-between mb-8">
@@ -46,10 +58,16 @@ export default function AppHeader({ backHref, backLabel, title }: AppHeaderProps
 
       <Link
         href="/profile"
-        className="w-9 h-9 rounded-full bg-green-600 hover:bg-green-500 flex items-center justify-center text-sm font-semibold text-white transition-colors ring-2 ring-green-800 hover:ring-green-500"
+        className="w-9 h-9 rounded-full overflow-hidden ring-2 ring-green-800 hover:ring-green-500 transition-all"
         title="Your profile"
       >
-        {initials}
+        {avatarSrc ? (
+          <img src={avatarSrc} alt="Profile" className="w-full h-full object-cover" />
+        ) : (
+          <div className="w-full h-full bg-green-600 hover:bg-green-500 flex items-center justify-center text-sm font-semibold text-white transition-colors">
+            {initials}
+          </div>
+        )}
       </Link>
     </header>
   );

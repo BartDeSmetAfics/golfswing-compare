@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import AppHeader from "@/components/AppHeader";
 
@@ -16,6 +16,7 @@ interface Profile {
   name: string | null;
   email: string;
   handicap: number | null;
+  avatarBase64: string | null;
   createdAt: string;
   swings: Swing[];
 }
@@ -28,6 +29,31 @@ function getInitials(name?: string | null, email?: string | null): string {
       : parts[0].slice(0, 2).toUpperCase();
   }
   return email ? email[0].toUpperCase() : "?";
+}
+
+function resizeImageToBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      const SIZE = 200;
+      const canvas = document.createElement("canvas");
+      canvas.width = SIZE;
+      canvas.height = SIZE;
+      const ctx = canvas.getContext("2d")!;
+
+      // Cover crop: center the image
+      const scale = Math.max(SIZE / img.width, SIZE / img.height);
+      const w = img.width * scale;
+      const h = img.height * scale;
+      ctx.drawImage(img, (SIZE - w) / 2, (SIZE - h) / 2, w, h);
+
+      URL.revokeObjectURL(url);
+      resolve(canvas.toDataURL("image/jpeg", 0.85));
+    };
+    img.onerror = reject;
+    img.src = url;
+  });
 }
 
 function getTips(profile: Profile): string[] {
@@ -66,6 +92,9 @@ export default function ProfilePage() {
   const [name, setName] = useState("");
   const [handicap, setHandicap] = useState("");
   const [saving, setSaving] = useState(false);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const avatarInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     fetch("/api/profile")
@@ -76,6 +105,24 @@ export default function ProfilePage() {
         setHandicap(data.handicap != null ? String(data.handicap) : "");
       });
   }, []);
+
+  async function handleAvatarChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingAvatar(true);
+    try {
+      const base64 = await resizeImageToBase64(file);
+      setAvatarPreview(base64);
+      await fetch("/api/profile", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ avatarBase64: base64 }),
+      });
+      setProfile((prev) => prev ? { ...prev, avatarBase64: base64 } : prev);
+    } finally {
+      setUploadingAvatar(false);
+    }
+  }
 
   async function handleSave() {
     if (!profile) return;
@@ -102,6 +149,7 @@ export default function ProfilePage() {
     );
   }
 
+  const avatarSrc = avatarPreview ?? profile.avatarBase64;
   const initials = getInitials(profile.name, profile.email);
   const tips = getTips(profile);
   const processedCount = profile.swings.filter((s) => s.status === "PROCESSED").length;
@@ -113,8 +161,40 @@ export default function ProfilePage() {
 
         {/* Profile card */}
         <div className="bg-green-900/60 rounded-2xl p-6 flex flex-col items-center gap-4">
-          <div className="w-20 h-20 rounded-full bg-green-600 ring-4 ring-green-700 flex items-center justify-center text-2xl font-bold">
-            {initials}
+
+          {/* Avatar with upload button */}
+          <div className="relative">
+            <button
+              onClick={() => avatarInputRef.current?.click()}
+              className="w-24 h-24 rounded-full overflow-hidden ring-4 ring-green-700 hover:ring-green-500 transition-all focus:outline-none group"
+              title="Change profile photo"
+            >
+              {avatarSrc ? (
+                <img src={avatarSrc} alt="Profile" className="w-full h-full object-cover" />
+              ) : (
+                <div className="w-full h-full bg-green-600 flex items-center justify-center text-2xl font-bold">
+                  {initials}
+                </div>
+              )}
+              {/* Hover overlay */}
+              <div className="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                <span className="text-xs text-white font-medium">Change</span>
+              </div>
+            </button>
+
+            {uploadingAvatar && (
+              <div className="absolute inset-0 bg-black/60 rounded-full flex items-center justify-center">
+                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              </div>
+            )}
+
+            <input
+              ref={avatarInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleAvatarChange}
+            />
           </div>
 
           {editing ? (
@@ -150,7 +230,11 @@ export default function ProfilePage() {
                   {saving ? "Saving…" : "Save"}
                 </button>
                 <button
-                  onClick={() => { setEditing(false); setName(profile.name ?? ""); setHandicap(profile.handicap != null ? String(profile.handicap) : ""); }}
+                  onClick={() => {
+                    setEditing(false);
+                    setName(profile.name ?? "");
+                    setHandicap(profile.handicap != null ? String(profile.handicap) : "");
+                  }}
                   className="flex-1 bg-green-900 hover:bg-green-800 border border-green-700 rounded-lg py-2 text-sm transition"
                 >
                   Cancel
@@ -256,7 +340,6 @@ export default function ProfilePage() {
           )}
         </section>
 
-        {/* Member since */}
         <p className="text-center text-xs text-green-700">
           Member since {new Date(profile.createdAt).toLocaleDateString("nl-BE", { month: "long", year: "numeric" })}
         </p>

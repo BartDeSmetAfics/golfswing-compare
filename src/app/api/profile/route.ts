@@ -13,6 +13,7 @@ export async function GET() {
       name: true,
       email: true,
       handicap: true,
+      avatarBase64: true,
       createdAt: true,
       swings: {
         orderBy: { createdAt: "desc" },
@@ -28,15 +29,16 @@ export async function PATCH(request: NextRequest) {
   const session = await auth();
   if (!session?.user?.id) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
-  const body = await request.json() as { name?: string; handicap?: number | null };
+  const body = await request.json() as { name?: string; handicap?: number | null; avatarBase64?: string | null };
 
   const user = await prisma.user.update({
     where: { id: session.user.id },
     data: {
       ...(body.name !== undefined && { name: body.name }),
       ...(body.handicap !== undefined && { handicap: body.handicap }),
+      ...(body.avatarBase64 !== undefined && { avatarBase64: body.avatarBase64 }),
     },
-    select: { id: true, name: true, email: true, handicap: true },
+    select: { id: true, name: true, email: true, handicap: true, avatarBase64: true },
   });
 
   return Response.json(user);

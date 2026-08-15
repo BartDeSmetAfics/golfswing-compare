@@ -15,6 +15,7 @@ model User {
   passwordHash String
   name         String?
   handicap     Float?
+  avatarBase64 String?   @db.Text
   isAdmin      Boolean  @default(false)
   createdAt    DateTime @default(now())
   swings       Swing[]
