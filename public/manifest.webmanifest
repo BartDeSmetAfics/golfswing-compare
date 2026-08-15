@@ -1,0 +1,23 @@
+{
+  "name": "GolfSwing Compare",
+  "short_name": "GolfSwing",
+  "description": "Compare your golf swing with the pros",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#052e16",
+  "theme_color": "#15803d",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

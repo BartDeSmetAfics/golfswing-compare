@@ -1,0 +1,102 @@
+// Prisma schema for GolfSwing Compare
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  name         String?
+  isAdmin      Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  swings       Swing[]
+}
+
+model Pro {
+  id              String              @id @default(cuid())
+  name            String              @unique
+  slug            String              @unique
+  createdAt       DateTime            @default(now())
+  referenceFrames ProReferenceFrame[]
+  analyses        Analysis[]
+}
+
+enum ClubType {
+  IRON
+  DRIVER
+  CHIP
+  PUTT
+}
+
+enum SwingPhase {
+  ADDRESS
+  TAKEAWAY
+  TOP_OF_BACKSWING
+  DOWNSWING_TRANSITION
+  IMPACT
+  FOLLOW_THROUGH
+}
+
+enum SwingStatus {
+  UPLOADED
+  PROCESSING
+  PROCESSED
+  FAILED
+}
+
+model Swing {
+  id        String       @id @default(cuid())
+  userId    String
+  user      User         @relation(fields: [userId], references: [id])
+  clubType  ClubType     @default(IRON)
+  videoKey  String
+  status    SwingStatus  @default(UPLOADED)
+  createdAt DateTime     @default(now())
+  frames    SwingFrame[]
+  analyses  Analysis[]
+}
+
+model SwingFrame {
+  id          String     @id @default(cuid())
+  swingId     String
+  swing       Swing      @relation(fields: [swingId], references: [id])
+  phase       SwingPhase
+  timestampMs Int
+  imageKey    String
+  confidence  Float?
+  createdAt   DateTime   @default(now())
+
+  @@unique([swingId, phase])
+}
+
+model ProReferenceFrame {
+  id         String     @id @default(cuid())
+  proId      String
+  pro        Pro        @relation(fields: [proId], references: [id])
+  clubType   ClubType   @default(IRON)
+  phase      SwingPhase
+  imageKey   String
+  sourceNote String?
+  createdAt  DateTime   @default(now())
+
+  @@unique([proId, clubType, phase])
+}
+
+model Analysis {
+  id             String   @id @default(cuid())
+  swingId        String
+  swing          Swing    @relation(fields: [swingId], references: [id])
+  proId          String
+  pro            Pro      @relation(fields: [proId], references: [id])
+  model          String
+  overallSummary String   @db.Text
+  result         Json
+  createdAt      DateTime @default(now())
+}
