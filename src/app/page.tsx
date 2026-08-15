@@ -15,7 +15,7 @@ export default async function DashboardPage() {
     <main className="min-h-screen bg-green-950 text-white p-6">
       <div className="max-w-2xl mx-auto">
         <div className="flex items-center justify-between mb-8">
-          <h1 className="text-2xl font-bold">GolfSwing Compare</h1>
+          <h1 className="text-2xl font-bold" style={{ fontFamily: "var(--font-playfair)" }}>GolfSwing Compare</h1>
           <form
             action={async () => {
               "use server";
