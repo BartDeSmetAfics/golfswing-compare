@@ -12,8 +12,8 @@ const r2 = new S3Client({
 
 const BUCKET = process.env.R2_BUCKET_NAME!;
 
-export function swingVideoKey(userId: string, swingId: string) {
-  return `users/${userId}/swings/${swingId}/video.webm`;
+export function swingVideoKey(userId: string, swingId: string, ext = "webm") {
+  return `users/${userId}/swings/${swingId}/video.${ext}`;
 }
 
 export function swingFrameKey(userId: string, swingId: string, phase: string) {

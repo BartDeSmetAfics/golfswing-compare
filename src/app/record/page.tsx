@@ -1,38 +1,40 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import CameraRecorder from "@/components/CameraRecorder";
 import FrameExtractor from "@/components/FrameExtractor";
 
+type Mode = "record" | "upload";
+
 export default function RecordPage() {
   const router = useRouter();
+  const [mode, setMode] = useState<Mode>("record");
   const [swingId, setSwingId] = useState<string | null>(null);
   const [videoBlob, setVideoBlob] = useState<Blob | null>(null);
   const [progress, setProgress] = useState(0);
   const [progressLabel, setProgressLabel] = useState("");
   const [error, setError] = useState("");
   const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleRecordingComplete = useCallback(async (blob: Blob) => {
+  const uploadVideo = useCallback(async (blob: Blob, mimeType: string) => {
     setUploading(true);
     setError("");
 
     try {
-      // Create swing + get presigned upload URL for the video
       const res = await fetch("/api/swings", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ clubType: "IRON" }),
+        body: JSON.stringify({ clubType: "IRON", videoMimeType: mimeType }),
       });
       const { swingId: id, uploadUrl } = await res.json() as { swingId: string; uploadUrl: string };
       setSwingId(id);
 
-      // Upload video directly to R2
       await fetch(uploadUrl, {
         method: "PUT",
         body: blob,
-        headers: { "Content-Type": "video/webm" },
+        headers: { "Content-Type": mimeType },
       });
 
       setVideoBlob(blob);
@@ -43,6 +45,17 @@ export default function RecordPage() {
     }
   }, []);
 
+  const handleRecordingComplete = useCallback((blob: Blob) => {
+    uploadVideo(blob, "video/webm");
+  }, [uploadVideo]);
+
+  const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const mimeType = file.type || "video/mp4";
+    uploadVideo(file, mimeType);
+  }, [uploadVideo]);
+
   const handleProgress = useCallback((pct: number, label: string) => {
     setProgress(pct);
     setProgressLabel(label);
@@ -52,22 +65,84 @@ export default function RecordPage() {
     router.push(`/swings/${swingId}`);
   }, [router, swingId]);
 
+  const reset = () => {
+    setSwingId(null);
+    setVideoBlob(null);
+    setProgress(0);
+    setProgressLabel("");
+    setError("");
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
   return (
     <main className="min-h-screen bg-green-950 text-white p-6">
       <div className="max-w-sm mx-auto flex flex-col gap-6">
         <div className="flex items-center gap-3">
           <a href="/" className="text-green-300 hover:text-white text-sm">← Back</a>
-          <h1 className="text-xl font-bold">Record iron swing</h1>
+          <h1 className="text-xl font-bold">New iron swing</h1>
         </div>
 
-        <p className="text-green-300 text-sm">
-          Stand so your full body is visible. Record your complete iron swing in one take.
-        </p>
-
+        {/* Mode tabs — only show before upload starts */}
         {!videoBlob && !uploading && (
-          <CameraRecorder onRecordingComplete={handleRecordingComplete} />
+          <div className="flex rounded-xl overflow-hidden border border-green-800">
+            <button
+              onClick={() => { setMode("record"); reset(); }}
+              className={`flex-1 py-2 text-sm font-medium transition-colors ${
+                mode === "record"
+                  ? "bg-green-600 text-white"
+                  : "bg-green-900/40 text-green-300 hover:bg-green-900"
+              }`}
+            >
+              🎥 Record now
+            </button>
+            <button
+              onClick={() => { setMode("upload"); reset(); }}
+              className={`flex-1 py-2 text-sm font-medium transition-colors ${
+                mode === "upload"
+                  ? "bg-green-600 text-white"
+                  : "bg-green-900/40 text-green-300 hover:bg-green-900"
+              }`}
+            >
+              📁 Upload video
+            </button>
+          </div>
         )}
 
+        {/* Record mode */}
+        {mode === "record" && !videoBlob && !uploading && (
+          <>
+            <p className="text-green-300 text-sm">
+              Stand so your full body is visible. Record your complete iron swing in one take.
+            </p>
+            <CameraRecorder onRecordingComplete={handleRecordingComplete} />
+          </>
+        )}
+
+        {/* Upload mode */}
+        {mode === "upload" && !videoBlob && !uploading && (
+          <>
+            <p className="text-green-300 text-sm">
+              Choose a video of your iron swing from your photo library.
+            </p>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="video/*"
+              className="hidden"
+              onChange={handleFileChange}
+            />
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              className="flex flex-col items-center justify-center gap-3 border-2 border-dashed border-green-600 rounded-2xl p-10 text-green-300 hover:border-green-400 hover:text-white transition-colors"
+            >
+              <span className="text-4xl">📹</span>
+              <span className="text-sm font-medium">Tap to choose video</span>
+              <span className="text-xs text-green-500">MP4, MOV, WebM supported</span>
+            </button>
+          </>
+        )}
+
+        {/* Uploading spinner */}
         {uploading && (
           <div className="flex flex-col items-center gap-3 py-8">
             <div className="w-8 h-8 border-4 border-green-500 border-t-transparent rounded-full animate-spin" />
@@ -75,6 +150,7 @@ export default function RecordPage() {
           </div>
         )}
 
+        {/* Frame extraction progress */}
         {videoBlob && swingId && (
           <div className="flex flex-col gap-3">
             {progressLabel && (
