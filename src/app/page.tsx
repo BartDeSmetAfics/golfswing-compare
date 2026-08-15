@@ -1,6 +1,7 @@
-import { auth, signOut } from "@/lib/auth";
+import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
+import AppHeader from "@/components/AppHeader";
 
 export default async function DashboardPage() {
   const session = await auth();
@@ -14,19 +15,7 @@ export default async function DashboardPage() {
   return (
     <main className="min-h-screen bg-green-950 text-white p-6">
       <div className="max-w-2xl mx-auto">
-        <div className="flex items-center justify-between mb-8">
-          <h1 className="text-2xl font-bold" style={{ fontFamily: "var(--font-playfair)" }}>GolfSwing Compare</h1>
-          <form
-            action={async () => {
-              "use server";
-              await signOut({ redirectTo: "/login" });
-            }}
-          >
-            <button className="text-sm text-green-300 hover:text-white">
-              Sign out
-            </button>
-          </form>
-        </div>
+        <AppHeader />
 
         <Link
           href="/record"
@@ -35,7 +24,9 @@ export default async function DashboardPage() {
           + Record new swing
         </Link>
 
-        <h2 className="text-lg font-semibold mb-3 text-green-200">Your swings</h2>
+        <h2 className="text-lg font-semibold mb-3 text-green-200" style={{ fontFamily: "var(--font-playfair)" }}>
+          Your swings
+        </h2>
 
         {swings.length === 0 ? (
           <p className="text-green-400 text-sm">
@@ -65,7 +56,10 @@ export default async function DashboardPage() {
                       {swing.status.toLowerCase()}
                     </span>
                     <span>
-                      {new Date(swing.createdAt).toLocaleDateString()}
+                      {new Date(swing.createdAt).toLocaleDateString("nl-BE", {
+                        day: "numeric",
+                        month: "short",
+                      })}
                     </span>
                   </span>
                 </Link>

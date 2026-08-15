@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import ProSelector from "@/components/ProSelector";
 import SwingPhaseComparison from "@/components/SwingPhaseComparison";
 import CoachingFeedback from "@/components/CoachingFeedback";
+import AppHeader from "@/components/AppHeader";
 import type { SwingPhase } from "@/lib/constants";
 import { SWING_PHASES } from "@/lib/constants";
 
@@ -88,21 +89,7 @@ export default function SwingDetailPage() {
   return (
     <main className="min-h-screen bg-green-950 text-white p-6 pb-16">
       <div className="max-w-2xl mx-auto flex flex-col gap-6">
-        <div className="flex items-center gap-3">
-          <a href="/" className="text-green-300 hover:text-white text-sm">← Dashboard</a>
-          <h1 className="text-xl font-bold capitalize">
-            {swing.clubType.toLowerCase()} swing
-          </h1>
-          <span
-            className={`ml-auto text-xs px-2 py-1 rounded-full ${
-              swing.status === "PROCESSED"
-                ? "bg-green-800 text-green-300"
-                : "bg-yellow-900 text-yellow-300"
-            }`}
-          >
-            {swing.status.toLowerCase()}
-          </span>
-        </div>
+        <AppHeader backHref="/" backLabel="Dashboard" title={`${swing.clubType.toLowerCase()} swing`} />
 
         {swing.status !== "PROCESSED" ? (
           <p className="text-yellow-400 text-sm">

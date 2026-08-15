@@ -4,6 +4,7 @@ import { useState, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import CameraRecorder from "@/components/CameraRecorder";
 import FrameExtractor from "@/components/FrameExtractor";
+import AppHeader from "@/components/AppHeader";
 
 type Mode = "record" | "upload";
 
@@ -84,10 +85,7 @@ export default function RecordPage() {
   return (
     <main className="min-h-screen bg-green-950 text-white p-6">
       <div className="max-w-sm mx-auto flex flex-col gap-6">
-        <div className="flex items-center gap-3">
-          <a href="/" className="text-green-300 hover:text-white text-sm">← Back</a>
-          <h1 className="text-xl font-bold">New iron swing</h1>
-        </div>
+        <AppHeader backHref="/" backLabel="Dashboard" title="New iron swing" />
 
         {/* Mode tabs — only show before upload starts */}
         {!videoBlob && !uploading && (
