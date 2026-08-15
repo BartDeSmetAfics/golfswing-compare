@@ -20,24 +20,33 @@ export async function POST(request: NextRequest) {
   const session = await auth();
   if (!session?.user?.id) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { clubType = "IRON", videoMimeType = "video/webm" } = await request.json();
+  if (!process.env.R2_ENDPOINT || !process.env.R2_ACCESS_KEY_ID || !process.env.R2_BUCKET_NAME) {
+    return Response.json({ error: "Storage not configured — add R2 variables in Railway" }, { status: 500 });
+  }
 
-  const extMap: Record<string, string> = {
-    "video/webm": "webm",
-    "video/mp4": "mp4",
-    "video/quicktime": "mov",
-  };
-  const ext = extMap[videoMimeType] ?? "mp4";
+  try {
+    const { clubType = "IRON", videoMimeType = "video/webm" } = await request.json();
 
-  const swing = await prisma.swing.create({
-    data: { userId: session.user.id, clubType, videoKey: "" },
-    select: { id: true },
-  });
+    const extMap: Record<string, string> = {
+      "video/webm": "webm",
+      "video/mp4": "mp4",
+      "video/quicktime": "mov",
+    };
+    const ext = extMap[videoMimeType] ?? "mp4";
 
-  const key = swingVideoKey(session.user.id, swing.id, ext);
-  await prisma.swing.update({ where: { id: swing.id }, data: { videoKey: key } });
+    const swing = await prisma.swing.create({
+      data: { userId: session.user.id, clubType, videoKey: "" },
+      select: { id: true },
+    });
 
-  const uploadUrl = await getUploadUrl(key, videoMimeType);
+    const key = swingVideoKey(session.user.id, swing.id, ext);
+    await prisma.swing.update({ where: { id: swing.id }, data: { videoKey: key } });
 
-  return Response.json({ swingId: swing.id, uploadUrl }, { status: 201 });
+    const uploadUrl = await getUploadUrl(key, videoMimeType);
+
+    return Response.json({ swingId: swing.id, uploadUrl }, { status: 201 });
+  } catch (err) {
+    console.error("[POST /api/swings]", err);
+    return Response.json({ error: err instanceof Error ? err.message : "Internal error" }, { status: 500 });
+  }
 }
