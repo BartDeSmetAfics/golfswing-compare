@@ -24,6 +24,7 @@ export default function RecordPage() {
     setError("");
 
     try {
+      // Step 1: create swing record
       const res = await fetch("/api/swings", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -33,16 +34,18 @@ export default function RecordPage() {
         const body = await res.json().catch(() => ({}));
         throw new Error(`Server error ${res.status}: ${body.error ?? "unknown"}`);
       }
-      const { swingId: id, uploadUrl } = await res.json() as { swingId: string; uploadUrl: string };
+      const { swingId: id } = await res.json() as { swingId: string };
       setSwingId(id);
 
-      const r2Res = await fetch(uploadUrl, {
+      // Step 2: upload video via server (avoids CORS issues with R2)
+      const uploadRes = await fetch(`/api/swings/${id}/video`, {
         method: "PUT",
         body: blob,
         headers: { "Content-Type": mimeType },
       });
-      if (!r2Res.ok) {
-        throw new Error(`R2 upload failed ${r2Res.status}: ${await r2Res.text()}`);
+      if (!uploadRes.ok) {
+        const body = await uploadRes.json().catch(() => ({}));
+        throw new Error(`Upload failed ${uploadRes.status}: ${body.error ?? "unknown"}`);
       }
 
       setVideoBlob(blob);

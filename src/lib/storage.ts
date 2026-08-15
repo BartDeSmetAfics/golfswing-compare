@@ -33,6 +33,15 @@ export async function getUploadUrl(key: string, contentType: string) {
   return getSignedUrl(r2, command, { expiresIn: 300 });
 }
 
+export async function uploadBuffer(key: string, buffer: Buffer, contentType: string) {
+  await r2.send(new PutObjectCommand({
+    Bucket: BUCKET,
+    Key: key,
+    Body: buffer,
+    ContentType: contentType,
+  }));
+}
+
 export async function getDownloadUrl(key: string, expiresIn = 300) {
   const command = new GetObjectCommand({ Bucket: BUCKET, Key: key });
   return getSignedUrl(r2, command, { expiresIn });
