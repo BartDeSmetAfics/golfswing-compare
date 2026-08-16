@@ -16,11 +16,17 @@ export async function POST(
     const { swingId } = await params;
     const { proId, cameraAngle = "FACE_ON" } = await request.json();
 
-    const swing = await prisma.swing.findFirst({
-      where: { id: swingId, userId: session.user.id },
-      include: { frames: true },
-    });
+    const [swing, user] = await Promise.all([
+      prisma.swing.findFirst({
+        where: { id: swingId, userId: session.user.id },
+        include: { frames: true },
+      }),
+      prisma.user.findUnique({ where: { id: session.user.id }, select: { name: true } }),
+    ]);
     if (!swing) return Response.json({ error: "Swing not found" }, { status: 404 });
+
+    // Use first name only; fall back to "jij" if name is not set
+    const firstName = user?.name?.split(" ")[0] ?? null;
 
     const pro = await prisma.pro.findUnique({ where: { id: proId } });
     if (!pro) return Response.json({ error: "Pro not found" }, { status: 404 });
@@ -60,7 +66,7 @@ export async function POST(
       })
     );
 
-    const result = await analyzeSwing(framePairs, pro.name);
+    const result = await analyzeSwing(framePairs, pro.name, firstName);
 
     const analysis = await prisma.analysis.create({
       data: {

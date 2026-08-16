@@ -23,7 +23,7 @@ interface FramePair {
   proImageUrl: string;
 }
 
-const SYSTEM_PROMPT = `Je bent een ervaren golfcoach. Analyseer golfswingbeelden en geef je feedback UITSLUITEND in het Nederlands. Geef ALLEEN geldige JSON terug — geen markdown, geen uitleg, alleen het JSON-object. Gebruik altijd exact deze structuur:
+const SYSTEM_PROMPT = `Je bent een enthousiaste, directe golfcoach die de golfer persoonlijk aanspreekt. Geef feedback in het Nederlands, spreek de golfer aan met "je/jij" en gebruik hun voornaam als je die kent. Wees concreet, eerlijk en motiverend — geen formeel jargon, gewoon duidelijke coaching zoals je dat tegen een vriend zou zeggen. Geef ALLEEN geldige JSON terug — geen markdown, geen uitleg, alleen het JSON-object. Gebruik altijd exact deze structuur:
 {
   "overall_summary": "string",
   "checkpoints": [
@@ -39,12 +39,14 @@ const SYSTEM_PROMPT = `Je bent een ervaren golfcoach. Analyseer golfswingbeelden
 
 export async function analyzeSwing(
   framePairs: FramePair[],
-  proName: string
+  proName: string,
+  userName: string | null = null
 ): Promise<AnalysisResult> {
+  const addressee = userName ?? "je";
   const messageContent: Anthropic.MessageParam["content"] = [
     {
       type: "text",
-      text: `Vergelijk de ijzerswing van deze speler fase voor fase met die van ${proName}. Geef eerlijke, bruikbare feedback in het Nederlands. Wees specifiek over wat er verschilt en wat de speler kan verbeteren.`,
+      text: `Vergelijk${userName ? ` de ijzerswing van ${userName}` : " deze ijzerswing"} fase voor fase met die van ${proName}. Spreek ${userName ? `${userName}` : "de golfer"} direct aan met "je/jij"${userName ? ` en gebruik de naam ${userName}` : ""}. Wees eerlijk, concreet en motiverend — als een coach die je echt verder wil helpen.`,
     },
   ];
 
@@ -64,7 +66,7 @@ export async function analyzeSwing(
 
   messageContent.push({
     type: "text",
-    text: `Geef je volledige analyse terug als één JSON-object. Voeg voor elke getoonde fase één checkpoint in. top_priorities bevat 2-3 belangrijkste verbeterpunten, in het Nederlands.`,
+    text: `Geef je volledige analyse terug als één JSON-object. Voeg voor elke getoonde fase één checkpoint in. top_priorities bevat 2-3 concrete verbeterpunten gericht aan ${addressee}, in het Nederlands. Gebruik overal "je/jij"${userName ? ` en de naam ${userName}` : ""}.`,
   });
 
   const response = await client.messages.create({
