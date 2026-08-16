@@ -28,7 +28,7 @@ export default function AppHeader({ backHref, backLabel, title, rightAction }: A
           </>
         ) : (
           <Link href="/" className="text-2xl font-bold" style={{ fontFamily: "var(--font-playfair)" }}>
-            GolfSwing Compare
+            SWINGIT
           </Link>
         )}
       </div>

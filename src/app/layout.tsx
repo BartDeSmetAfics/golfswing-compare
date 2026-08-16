@@ -16,7 +16,7 @@ const dmSans = DM_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "GolfSwing Compare",
+  title: "SWINGIT",
   description: "Compare your golf swing with the pros",
 };
 

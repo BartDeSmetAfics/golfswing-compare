@@ -36,7 +36,7 @@ export default function LoginPage() {
         onSubmit={handleSubmit}
         className="bg-white rounded-2xl shadow-xl p-8 w-full max-w-sm flex flex-col gap-4"
       >
-        <h1 className="text-2xl font-bold text-green-900">GolfSwing Compare</h1>
+        <h1 className="text-2xl font-bold text-green-900">SWINGIT</h1>
         <p className="text-gray-500 text-sm">Sign in to your account</p>
 
         {error && (

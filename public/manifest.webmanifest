@@ -1,6 +1,6 @@
 {
-  "name": "GolfSwing Compare",
-  "short_name": "GolfSwing",
+  "name": "SWINGIT",
+  "short_name": "SWINGIT",
   "description": "Compare your golf swing with the pros",
   "start_url": "/",
   "display": "standalone",
