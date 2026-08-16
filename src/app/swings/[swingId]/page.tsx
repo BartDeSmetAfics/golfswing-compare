@@ -49,18 +49,26 @@ export default function SwingDetailPage() {
   const [proFrames, setProFrames] = useState<ProReferenceFrame[]>([]);
   const [selectedAngle, setSelectedAngle] = useState<CameraAngle>("FACE_ON");
   const [loading, setLoading] = useState(true);
-  const [loadError, setLoadError] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [proLoading, setProLoading] = useState(false);
 
-  useEffect(() => {
+  function fetchSwing() {
+    setLoading(true);
+    setLoadError(null);
     fetch(`/api/swings/${swingId}`)
-      .then((r) => {
-        if (!r.ok) throw new Error(`HTTP ${r.status}`);
-        return r.json();
+      .then(async (r) => {
+        const data = await r.json();
+        if (!r.ok) throw new Error(data.error ?? `HTTP ${r.status}`);
+        return data;
       })
       .then((data: Swing) => { setSwing(data); setLoading(false); })
-      .catch(() => { setLoadError(true); setLoading(false); });
-  }, [swingId]);
+      .catch((e: unknown) => {
+        setLoadError(e instanceof Error ? e.message : String(e));
+        setLoading(false);
+      });
+  }
+
+  useEffect(() => { fetchSwing(); }, [swingId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function handleProSelect(proId: string) {
     setSelectedProId(proId);
@@ -95,14 +103,14 @@ export default function SwingDetailPage() {
     );
   }
 
-  if (loadError || !swing) {
+  if (loadError !== null || !swing) {
     return (
       <main className="min-h-screen bg-green-950 text-white p-6 flex flex-col items-center justify-center gap-4">
         <p className="text-red-400">{t.swingLoadError}</p>
-        <button
-          onClick={() => { setLoadError(false); setLoading(true); fetch(`/api/swings/${swingId}`).then((r) => r.ok ? r.json() : Promise.reject()).then((data: Swing) => { setSwing(data); setLoading(false); }).catch(() => { setLoadError(true); setLoading(false); }); }}
-          className="text-green-400 text-sm underline hover:text-white"
-        >
+        {loadError && (
+          <p className="text-red-600 text-xs font-mono bg-black/30 rounded px-3 py-2 max-w-sm text-center break-all">{loadError}</p>
+        )}
+        <button onClick={fetchSwing} className="text-green-400 text-sm underline hover:text-white">
           {t.tryAgain}
         </button>
       </main>
