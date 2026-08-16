@@ -13,13 +13,6 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
 
-  if (pathname.startsWith("/admin")) {
-    const adminEmails = (process.env.ADMIN_EMAILS ?? "").split(",").map((e) => e.trim());
-    if (!session.user?.email || !adminEmails.includes(session.user.email)) {
-      return NextResponse.redirect(new URL("/", request.url));
-    }
-  }
-
   return NextResponse.next();
 }
 
