@@ -4,6 +4,7 @@ import { useState } from "react";
 import { SWING_PHASE_LABELS } from "@/lib/constants";
 import type { SwingPhase, CameraAngle } from "@/lib/constants";
 import type { AnalysisResult, CheckpointFeedback } from "@/lib/claude";
+import { useLocale } from "@/context/LocaleContext";
 
 interface Props {
   swingId: string;
@@ -13,9 +14,8 @@ interface Props {
 }
 
 export default function CoachingFeedback({ swingId, proId, cameraAngle = "FACE_ON", existingAnalysis }: Props) {
-  const [analysis, setAnalysis] = useState<AnalysisResult | null>(
-    existingAnalysis ?? null
-  );
+  const { t } = useLocale();
+  const [analysis, setAnalysis] = useState<AnalysisResult | null>(existingAnalysis ?? null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -54,7 +54,7 @@ export default function CoachingFeedback({ swingId, proId, cameraAngle = "FACE_O
           disabled={loading}
           className="bg-green-600 hover:bg-green-500 disabled:opacity-50 text-white rounded-xl py-3 font-semibold transition"
         >
-          {loading ? "Analysing with Claude…" : "Get AI coaching feedback"}
+          {loading ? t.analysing : t.getCoaching}
         </button>
       </div>
     );
@@ -69,7 +69,7 @@ export default function CoachingFeedback({ swingId, proId, cameraAngle = "FACE_O
       {analysis.top_priorities.length > 0 && (
         <div>
           <h3 className="text-green-200 font-semibold text-sm uppercase tracking-wide mb-2">
-            Top priorities
+            {t.topPriorities}
           </h3>
           <ul className="flex flex-col gap-2">
             {analysis.top_priorities.map((tip, i) => (
@@ -84,7 +84,7 @@ export default function CoachingFeedback({ swingId, proId, cameraAngle = "FACE_O
 
       <div className="flex flex-col gap-4">
         <h3 className="text-green-200 font-semibold text-sm uppercase tracking-wide">
-          Phase by phase
+          {t.phaseByPhase}
         </h3>
         {analysis.checkpoints.map((cp: CheckpointFeedback) => (
           <div key={cp.phase} className="bg-green-900/50 rounded-xl p-4 flex flex-col gap-2">
@@ -94,7 +94,7 @@ export default function CoachingFeedback({ swingId, proId, cameraAngle = "FACE_O
             <p className="text-white text-sm">{cp.observation}</p>
             <p className="text-green-300 text-sm italic">{cp.comparison_to_pro}</p>
             <p className="text-yellow-300 text-sm">
-              <span className="font-semibold">Tip:</span> {cp.coaching_tip}
+              <span className="font-semibold">{t.tip}:</span> {cp.coaching_tip}
             </p>
           </div>
         ))}
@@ -105,7 +105,7 @@ export default function CoachingFeedback({ swingId, proId, cameraAngle = "FACE_O
         disabled={loading}
         className="text-green-400 text-sm hover:text-green-200 disabled:opacity-50 underline"
       >
-        {loading ? "Analysing…" : "Re-analyse"}
+        {loading ? t.reanalysing : t.reanalyse}
       </button>
     </div>
   );

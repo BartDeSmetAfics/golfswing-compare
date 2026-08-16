@@ -10,6 +10,7 @@ import AppHeader from "@/components/AppHeader";
 import type { SwingPhase, CameraAngle } from "@/lib/constants";
 import { SWING_PHASES, CAMERA_ANGLES } from "@/lib/constants";
 import type { AnalysisResult } from "@/lib/claude";
+import { useLocale } from "@/context/LocaleContext";
 
 interface SwingFrame {
   phase: SwingPhase;
@@ -40,6 +41,8 @@ interface ProReferenceFrame {
 
 export default function SwingDetailPage() {
   const { swingId } = useParams<{ swingId: string }>();
+  const { t } = useLocale();
+
   const [swing, setSwing] = useState<Swing | null>(null);
   const [selectedProId, setSelectedProId] = useState<string | null>(null);
   const [selectedProName, setSelectedProName] = useState<string>("");
@@ -71,7 +74,6 @@ export default function SwingDetailPage() {
     setProLoading(false);
   }
 
-  // When angle changes, reload pro frames for the new angle
   useEffect(() => {
     if (!selectedProId || !swing) return;
     setProLoading(true);
@@ -91,17 +93,15 @@ export default function SwingDetailPage() {
   if (!swing) {
     return (
       <main className="min-h-screen bg-green-950 text-white p-6 flex items-center justify-center">
-        <p>Swing niet gevonden.</p>
+        <p>{t.swingNotFound}</p>
       </main>
     );
   }
 
-  // Which angles does this swing have frames for?
   const availableAngles = CAMERA_ANGLES.filter((angle) =>
     swing.frames.some((f) => f.cameraAngle === angle)
   );
 
-  // Filter user frames by selected angle
   const userFramesForAngle = swing.frames.filter((f) => f.cameraAngle === selectedAngle);
 
   const pairedFrames = SWING_PHASES.filter((phase) => {
@@ -115,10 +115,8 @@ export default function SwingDetailPage() {
     proName: selectedProName,
   }));
 
-  // Which angle is missing for this swing?
   const missingAngle = CAMERA_ANGLES.find((a) => !availableAngles.includes(a));
 
-  // Find the most recent saved analysis for the selected pro (if any)
   const existingAnalysis = selectedProId
     ? swing.analyses.find((a) => a.proId === selectedProId)?.result ?? null
     : null;
@@ -126,15 +124,12 @@ export default function SwingDetailPage() {
   return (
     <main className="min-h-screen bg-green-950 text-white p-6 pb-16">
       <div className="max-w-2xl mx-auto flex flex-col gap-6">
-        <AppHeader backHref="/" backLabel="Dashboard" title={`${swing.clubType.toLowerCase()} swing`} />
+        <AppHeader backHref="/" backLabel={t.back} title={`${swing.clubType.toLowerCase()} swing`} />
 
         {swing.status !== "PROCESSED" ? (
-          <p className="text-yellow-400 text-sm">
-            Swing wordt nog verwerkt — kom zo terug.
-          </p>
+          <p className="text-yellow-400 text-sm">{t.stillProcessing}</p>
         ) : (
           <>
-            {/* Angle tabs — always visible */}
             <div className="flex flex-col gap-2">
               <div className="flex rounded-xl overflow-hidden border border-green-800">
                 {CAMERA_ANGLES.map((angle) => (
@@ -147,19 +142,18 @@ export default function SwingDetailPage() {
                         : "bg-green-900/40 text-green-300 hover:bg-green-900"
                     }`}
                   >
-                    {angle === "FACE_ON" ? "🎯 Tegenover" : "🎬 Van achter"}
+                    {angle === "FACE_ON" ? t.faceOn : t.downTheLine}
                   </button>
                 ))}
               </div>
 
-              {/* Prompt to add this angle if user doesn't have it yet */}
               {missingAngle === selectedAngle && (
                 <Link
                   href={`/record?swingId=${swingId}&angle=${selectedAngle}`}
                   className="flex items-center justify-center gap-2 border border-dashed border-green-700 rounded-xl py-2 text-sm text-green-400 hover:text-green-200 hover:border-green-500 transition"
                 >
                   <span>+</span>
-                  <span>Voeg jouw {selectedAngle === "FACE_ON" ? "tegenover" : "van achter"} video toe</span>
+                  <span>{selectedAngle === "FACE_ON" ? t.addAngleFaceOn : t.addAngleDtl}</span>
                 </Link>
               )}
             </div>
@@ -187,15 +181,15 @@ export default function SwingDetailPage() {
             {!proLoading && selectedProId && pairedFrames.length === 0 && (
               <div className="bg-green-900/40 rounded-xl p-4 text-sm text-green-300 flex flex-col gap-2">
                 {proFrames.length === 0 ? (
-                  <p>Geen {selectedAngle === "FACE_ON" ? "tegenover" : "van-achter"} referentieframes voor deze pro — nog niet geseeded.</p>
+                  <p>{selectedAngle === "FACE_ON" ? t.noProFramesFaceOn : t.noProFramesDtl}</p>
                 ) : (
                   <>
-                    <p>Je hebt nog geen video geüpload van {selectedAngle === "FACE_ON" ? "tegenover" : "van achter"}.</p>
+                    <p>{selectedAngle === "FACE_ON" ? t.noUserFramesFaceOn : t.noUserFramesDtl}</p>
                     <Link
                       href={`/record?swingId=${swingId}&angle=${selectedAngle}`}
                       className="text-green-400 underline hover:text-green-200"
                     >
-                      + Video toevoegen →
+                      {t.addVideo}
                     </Link>
                   </>
                 )}

@@ -3,6 +3,8 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useLocale } from "@/context/LocaleContext";
+import { localeToDateLocale } from "@/lib/i18n";
 
 interface Swing {
   id: string;
@@ -13,6 +15,9 @@ interface Swing {
 
 export default function SwingList({ initialSwings }: { initialSwings: Swing[] }) {
   const router = useRouter();
+  const { t, locale } = useLocale();
+  const dateLocale = localeToDateLocale(locale);
+
   const [swings, setSwings] = useState<Swing[]>(initialSwings);
   const [confirmId, setConfirmId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -30,11 +35,7 @@ export default function SwingList({ initialSwings }: { initialSwings: Swing[] })
   }
 
   if (swings.length === 0) {
-    return (
-      <p className="text-green-400 text-sm">
-        Nog geen slagen — neem je eerste hierboven op.
-      </p>
-    );
+    return <p className="text-green-400 text-sm">{t.noSwings}</p>;
   }
 
   return (
@@ -43,20 +44,20 @@ export default function SwingList({ initialSwings }: { initialSwings: Swing[] })
         <li key={swing.id} className="relative">
           {confirmId === swing.id ? (
             <div className="flex items-center justify-between bg-red-900/60 border border-red-700 rounded-xl px-5 py-4 gap-3">
-              <span className="text-sm text-red-200">Slag verwijderen?</span>
+              <span className="text-sm text-red-200">{t.deleteConfirm}</span>
               <div className="flex gap-2 shrink-0">
                 <button
                   onClick={() => setConfirmId(null)}
                   className="text-xs px-3 py-1.5 rounded-lg bg-green-900 text-green-300 hover:bg-green-800 transition"
                 >
-                  Annuleer
+                  {t.cancel}
                 </button>
                 <button
                   onClick={() => handleDelete(swing.id)}
                   disabled={deletingId === swing.id}
                   className="text-xs px-3 py-1.5 rounded-lg bg-red-600 text-white hover:bg-red-500 disabled:opacity-50 transition"
                 >
-                  {deletingId === swing.id ? "Verwijderen…" : "Verwijder"}
+                  {deletingId === swing.id ? t.deleting : t.delete}
                 </button>
               </div>
             </div>
@@ -80,13 +81,13 @@ export default function SwingList({ initialSwings }: { initialSwings: Swing[] })
                     }
                   >
                     {swing.status === "PROCESSED"
-                      ? "klaar"
+                      ? t.statusReady
                       : swing.status === "FAILED"
-                      ? "mislukt"
-                      : "verwerken…"}
+                      ? t.statusFailed
+                      : t.statusProcessing}
                   </span>
                   <span>
-                    {new Date(swing.createdAt).toLocaleDateString("nl-BE", {
+                    {new Date(swing.createdAt).toLocaleDateString(dateLocale, {
                       day: "numeric",
                       month: "short",
                     })}
@@ -96,7 +97,7 @@ export default function SwingList({ initialSwings }: { initialSwings: Swing[] })
               <button
                 onClick={() => setConfirmId(swing.id)}
                 className="p-3 rounded-xl text-green-600 hover:text-red-400 hover:bg-green-900 transition"
-                aria-label="Verwijder slag"
+                aria-label={t.delete}
               >
                 <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />

@@ -3,6 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import AppHeader from "@/components/AppHeader";
+import { useLocale } from "@/context/LocaleContext";
+import { localeToDateLocale } from "@/lib/i18n";
 
 interface Swing {
   id: string;
@@ -41,13 +43,10 @@ function resizeImageToBase64(file: File): Promise<string> {
       canvas.width = SIZE;
       canvas.height = SIZE;
       const ctx = canvas.getContext("2d")!;
-
-      // Cover crop: center the image
       const scale = Math.max(SIZE / img.width, SIZE / img.height);
       const w = img.width * scale;
       const h = img.height * scale;
       ctx.drawImage(img, (SIZE - w) / 2, (SIZE - h) / 2, w, h);
-
       URL.revokeObjectURL(url);
       resolve(canvas.toDataURL("image/jpeg", 0.85));
     };
@@ -56,37 +55,19 @@ function resizeImageToBase64(file: File): Promise<string> {
   });
 }
 
-function getTips(profile: Profile): string[] {
-  const tips: string[] = [];
-  const processed = profile.swings.filter((s) => s.status === "PROCESSED").length;
-
-  if (profile.swings.length === 0) {
-    tips.push("Record your first iron swing to get started.");
-  } else if (profile.swings.length < 3) {
-    tips.push("Record a few more swings to start seeing your progress over time.");
-  } else {
-    tips.push(`You've uploaded ${profile.swings.length} swings — keep it up to track your improvement.`);
-  }
-
-  if (profile.handicap === null) {
-    tips.push("Set your handicap so you can track progress relative to your level.");
-  } else if (profile.handicap > 18) {
-    tips.push("Focus on consistent ball contact before working on swing shape.");
-  } else if (profile.handicap <= 10) {
-    tips.push("At your level, fine-tuning impact position gives the biggest gains.");
-  }
-
-  if (processed > 0) {
-    tips.push("Review the frame comparisons and coaching tips for each processed swing.");
-  }
-
-  tips.push("Film from down-the-line and face-on angles for the most useful analysis.");
-  tips.push("A stable address position is the foundation of every great swing.");
-
-  return tips.slice(0, 4);
+function GearIcon({ className }: { className?: string }) {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.324.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 011.37.49l1.296 2.247a1.125 1.125 0 01-.26 1.431l-1.003.827c-.293.24-.438.613-.431.992a6.759 6.759 0 010 .255c-.007.378.138.75.43.99l1.005.828c.424.35.534.954.26 1.43l-1.298 2.247a1.125 1.125 0 01-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.57 6.57 0 01-.22.128c-.331.183-.581.495-.644.869l-.213 1.28c-.09.543-.56.941-1.11.941h-2.594c-.55 0-1.02-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 01-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 01-1.369-.49l-1.297-2.247a1.125 1.125 0 01.26-1.431l1.004-.827c.292-.24.437-.613.43-.992a6.932 6.932 0 010-.255c.007-.378-.138-.75-.43-.99l-1.004-.828a1.125 1.125 0 01-.26-1.43l1.297-2.247a1.125 1.125 0 011.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.087.22-.128.332-.183.582-.495.644-.869l.214-1.281z" />
+      <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+    </svg>
+  );
 }
 
 export default function ProfilePage() {
+  const { t, locale } = useLocale();
+  const dateLocale = localeToDateLocale(locale);
+
   const [profile, setProfile] = useState<Profile | null>(null);
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState("");
@@ -141,6 +122,33 @@ export default function ProfilePage() {
     setSaving(false);
   }
 
+  function getTips(p: Profile): string[] {
+    const tips: string[] = [];
+    const processed = p.swings.filter((s) => s.status === "PROCESSED").length;
+
+    if (p.swings.length === 0) {
+      tips.push(t.tipFirstSwing);
+    } else if (p.swings.length < 3) {
+      tips.push(t.tipFewSwings);
+    } else {
+      tips.push(t.tipManySwings.replace("{count}", String(p.swings.length)));
+    }
+
+    if (p.handicap === null) {
+      tips.push(t.tipNoHandicap);
+    } else if (p.handicap > 18) {
+      tips.push(t.tipHighHandicap);
+    } else if (p.handicap <= 10) {
+      tips.push(t.tipLowHandicap);
+    }
+
+    if (processed > 0) tips.push(t.tipReview);
+    tips.push(t.tipAngles);
+    tips.push(t.tipAddress);
+
+    return tips.slice(0, 4);
+  }
+
   if (!profile) {
     return (
       <main className="min-h-screen bg-green-950 flex items-center justify-center">
@@ -154,10 +162,20 @@ export default function ProfilePage() {
   const tips = getTips(profile);
   const processedCount = profile.swings.filter((s) => s.status === "PROCESSED").length;
 
+  const gearAction = (
+    <Link
+      href="/settings"
+      className="p-2 rounded-xl text-green-400 hover:text-white hover:bg-green-900 transition"
+      title={t.settings}
+    >
+      <GearIcon className="w-5 h-5" />
+    </Link>
+  );
+
   return (
     <main className="min-h-screen bg-green-950 text-white p-6 pb-16">
       <div className="max-w-lg mx-auto flex flex-col gap-6">
-        <AppHeader backHref="/" backLabel="Dashboard" />
+        <AppHeader backHref="/" backLabel={t.back} rightAction={gearAction} />
 
         {/* Profile card */}
         <div className="bg-green-900/60 rounded-2xl p-6 flex flex-col items-center gap-4">
@@ -167,7 +185,7 @@ export default function ProfilePage() {
             <button
               onClick={() => avatarInputRef.current?.click()}
               className="w-24 h-24 rounded-full overflow-hidden ring-4 ring-green-700 hover:ring-green-500 transition-all focus:outline-none group"
-              title="Change profile photo"
+              title={t.changePhoto}
             >
               {avatarSrc ? (
                 <img src={avatarSrc} alt="Profile" className="w-full h-full object-cover" />
@@ -176,9 +194,8 @@ export default function ProfilePage() {
                   {initials}
                 </div>
               )}
-              {/* Hover overlay */}
               <div className="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                <span className="text-xs text-white font-medium">Change</span>
+                <span className="text-xs text-white font-medium">{t.changePhoto}</span>
               </div>
             </button>
 
@@ -200,16 +217,16 @@ export default function ProfilePage() {
           {editing ? (
             <div className="w-full flex flex-col gap-3">
               <div>
-                <label className="text-xs text-green-400 mb-1 block">Name</label>
+                <label className="text-xs text-green-400 mb-1 block">{t.name}</label>
                 <input
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  placeholder="Your name"
+                  placeholder={t.name}
                   className="w-full bg-green-950 border border-green-700 rounded-lg px-3 py-2 text-sm text-white placeholder-green-600 focus:outline-none focus:ring-2 focus:ring-green-500"
                 />
               </div>
               <div>
-                <label className="text-xs text-green-400 mb-1 block">Handicap</label>
+                <label className="text-xs text-green-400 mb-1 block">{t.handicap}</label>
                 <input
                   type="number"
                   min="0"
@@ -227,7 +244,7 @@ export default function ProfilePage() {
                   disabled={saving}
                   className="flex-1 bg-green-600 hover:bg-green-500 rounded-lg py-2 text-sm font-semibold disabled:opacity-50 transition"
                 >
-                  {saving ? "Saving…" : "Save"}
+                  {saving ? t.saving : t.save}
                 </button>
                 <button
                   onClick={() => {
@@ -237,7 +254,7 @@ export default function ProfilePage() {
                   }}
                   className="flex-1 bg-green-900 hover:bg-green-800 border border-green-700 rounded-lg py-2 text-sm transition"
                 >
-                  Cancel
+                  {t.cancel}
                 </button>
               </div>
             </div>
@@ -245,28 +262,27 @@ export default function ProfilePage() {
             <>
               <div className="text-center">
                 <p className="text-xl font-semibold" style={{ fontFamily: "var(--font-playfair)" }}>
-                  {profile.name ?? "No name set"}
+                  {profile.name ?? t.noName}
                 </p>
                 <p className="text-green-400 text-sm mt-0.5">{profile.email}</p>
               </div>
 
-              {/* Stats row */}
               <div className="flex gap-6 mt-2">
                 <div className="text-center">
                   <p className="text-2xl font-bold text-green-300">
                     {profile.handicap != null ? profile.handicap : "—"}
                   </p>
-                  <p className="text-xs text-green-500 mt-0.5">Handicap</p>
+                  <p className="text-xs text-green-500 mt-0.5">{t.handicap}</p>
                 </div>
                 <div className="w-px bg-green-800" />
                 <div className="text-center">
                   <p className="text-2xl font-bold text-green-300">{profile.swings.length}</p>
-                  <p className="text-xs text-green-500 mt-0.5">Swings</p>
+                  <p className="text-xs text-green-500 mt-0.5">{t.swings}</p>
                 </div>
                 <div className="w-px bg-green-800" />
                 <div className="text-center">
                   <p className="text-2xl font-bold text-green-300">{processedCount}</p>
-                  <p className="text-xs text-green-500 mt-0.5">Analysed</p>
+                  <p className="text-xs text-green-500 mt-0.5">{t.analysed}</p>
                 </div>
               </div>
 
@@ -274,7 +290,7 @@ export default function ProfilePage() {
                 onClick={() => setEditing(true)}
                 className="text-sm text-green-400 hover:text-white border border-green-700 hover:border-green-500 rounded-lg px-4 py-1.5 transition"
               >
-                Edit profile
+                {t.editProfile}
               </button>
             </>
           )}
@@ -283,7 +299,7 @@ export default function ProfilePage() {
         {/* Tips */}
         <section>
           <h2 className="text-base font-semibold text-green-200 mb-3" style={{ fontFamily: "var(--font-playfair)" }}>
-            Tips for you
+            {t.tipsForYou}
           </h2>
           <ul className="flex flex-col gap-2">
             {tips.map((tip, i) => (
@@ -298,10 +314,10 @@ export default function ProfilePage() {
         {/* All swings */}
         <section>
           <h2 className="text-base font-semibold text-green-200 mb-3" style={{ fontFamily: "var(--font-playfair)" }}>
-            Your swings
+            {t.yourSwingsSection}
           </h2>
           {profile.swings.length === 0 ? (
-            <p className="text-green-500 text-sm">No swings yet.</p>
+            <p className="text-green-500 text-sm">{t.noSwingsYet}</p>
           ) : (
             <ul className="flex flex-col gap-2">
               {profile.swings.map((swing) => (
@@ -323,11 +339,15 @@ export default function ProfilePage() {
                             : "bg-yellow-900 text-yellow-300"
                         }`}
                       >
-                        {swing.status.toLowerCase()}
+                        {swing.status === "PROCESSED"
+                          ? t.statusReady
+                          : swing.status === "FAILED"
+                          ? t.statusFailed
+                          : t.statusProcessing}
                       </span>
                     </div>
                     <span className="text-xs text-green-500">
-                      {new Date(swing.createdAt).toLocaleDateString("nl-BE", {
+                      {new Date(swing.createdAt).toLocaleDateString(dateLocale, {
                         day: "numeric",
                         month: "short",
                         year: "numeric",
@@ -341,7 +361,8 @@ export default function ProfilePage() {
         </section>
 
         <p className="text-center text-xs text-green-700">
-          Member since {new Date(profile.createdAt).toLocaleDateString("nl-BE", { month: "long", year: "numeric" })}
+          {t.memberSince}{" "}
+          {new Date(profile.createdAt).toLocaleDateString(dateLocale, { month: "long", year: "numeric" })}
         </p>
       </div>
     </main>

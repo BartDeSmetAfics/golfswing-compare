@@ -2,7 +2,7 @@
 
 import { useSession } from "next-auth/react";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 
 function getInitials(name?: string | null, email?: string | null): string {
   if (name) {
@@ -18,9 +18,11 @@ interface AppHeaderProps {
   backHref?: string;
   backLabel?: string;
   title?: string;
+  /** Replaces the default profile avatar circle on the right */
+  rightAction?: ReactNode;
 }
 
-export default function AppHeader({ backHref, backLabel, title }: AppHeaderProps) {
+export default function AppHeader({ backHref, backLabel, title, rightAction }: AppHeaderProps) {
   const { data: session } = useSession();
   const [avatarSrc, setAvatarSrc] = useState<string | null>(null);
   const initials = getInitials(session?.user?.name, session?.user?.email);
@@ -56,19 +58,21 @@ export default function AppHeader({ backHref, backLabel, title }: AppHeaderProps
         )}
       </div>
 
-      <Link
-        href="/profile"
-        className="w-9 h-9 rounded-full overflow-hidden ring-2 ring-green-800 hover:ring-green-500 transition-all"
-        title="Your profile"
-      >
-        {avatarSrc ? (
-          <img src={avatarSrc} alt="Profile" className="w-full h-full object-cover" />
-        ) : (
-          <div className="w-full h-full bg-green-600 hover:bg-green-500 flex items-center justify-center text-sm font-semibold text-white transition-colors">
-            {initials}
-          </div>
-        )}
-      </Link>
+      {rightAction ?? (
+        <Link
+          href="/profile"
+          className="w-9 h-9 rounded-full overflow-hidden ring-2 ring-green-800 hover:ring-green-500 transition-all"
+          title="Your profile"
+        >
+          {avatarSrc ? (
+            <img src={avatarSrc} alt="Profile" className="w-full h-full object-cover" />
+          ) : (
+            <div className="w-full h-full bg-green-600 hover:bg-green-500 flex items-center justify-center text-sm font-semibold text-white transition-colors">
+              {initials}
+            </div>
+          )}
+        </Link>
+      )}
     </header>
   );
 }
