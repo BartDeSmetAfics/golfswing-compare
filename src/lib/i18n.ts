@@ -82,6 +82,31 @@ const translations = {
     reanalysing: "Analyseren…",
     tip: "Tip",
 
+    // Bottom nav
+    navSwings: "Slagen",
+    navExercises: "Oefeningen",
+    navRecord: "Opnemen",
+    navPros: "Pro's",
+    navProfile: "Profiel",
+
+    // Exercises page
+    exercisesTitle: "Jouw oefeningen",
+    exercisesLoading: "Oefeningen ophalen…",
+    exercisesEmpty: "Neem eerst een paar slagen op en vraag AI coaching aan om gepersonaliseerde oefeningen te ontgrendelen.",
+    exercisesError: "Kon oefeningen niet ophalen.",
+    exerciseReps: "Herhalingen",
+    exerciseWhy: "Waarom?",
+    exercisesIntro: "Op basis van jouw recente coachingfeedback:",
+
+    // Pros page
+    prosTitle: "Pro golfers",
+    prosEmpty: "Nog geen pro's beschikbaar.",
+    proSignatureTraits: "Kenmerkende technieken",
+    proReferenceFrames: "Referentieframes",
+    faceOnFrames: "Tegenover",
+    dtlFrames: "Van achter",
+    noFrames: "Nog geen frames beschikbaar.",
+
     // Swing detail
     faceOn: "🎯 Tegenover",
     downTheLine: "🎬 Van achter",
@@ -166,6 +191,31 @@ const translations = {
     reanalysing: "Analysing…",
     tip: "Tip",
 
+    // Bottom nav
+    navSwings: "Swings",
+    navExercises: "Exercises",
+    navRecord: "Record",
+    navPros: "Pros",
+    navProfile: "Profile",
+
+    // Exercises page
+    exercisesTitle: "Your exercises",
+    exercisesLoading: "Fetching exercises…",
+    exercisesEmpty: "Record a few swings and get AI coaching first to unlock personalized exercises.",
+    exercisesError: "Could not fetch exercises.",
+    exerciseReps: "Reps",
+    exerciseWhy: "Why?",
+    exercisesIntro: "Based on your recent coaching feedback:",
+
+    // Pros page
+    prosTitle: "Pro golfers",
+    prosEmpty: "No pros available yet.",
+    proSignatureTraits: "Signature techniques",
+    proReferenceFrames: "Reference frames",
+    faceOnFrames: "Face-on",
+    dtlFrames: "Down-the-line",
+    noFrames: "No frames available yet.",
+
     faceOn: "🎯 Face-on",
     downTheLine: "🎬 Down-the-line",
     stillProcessing: "Swing is still processing — check back soon.",
@@ -248,6 +298,31 @@ const translations = {
     reanalyse: "Ré-analyser",
     reanalysing: "Analyse…",
     tip: "Conseil",
+
+    // Bottom nav
+    navSwings: "Swings",
+    navExercises: "Exercices",
+    navRecord: "Enregistrer",
+    navPros: "Pros",
+    navProfile: "Profil",
+
+    // Exercises page
+    exercisesTitle: "Vos exercices",
+    exercisesLoading: "Récupération des exercices…",
+    exercisesEmpty: "Enregistrez quelques swings et obtenez des conseils IA pour débloquer vos exercices personnalisés.",
+    exercisesError: "Impossible de récupérer les exercices.",
+    exerciseReps: "Répétitions",
+    exerciseWhy: "Pourquoi ?",
+    exercisesIntro: "Basé sur vos derniers retours de coaching :",
+
+    // Pros page
+    prosTitle: "Golfeurs pros",
+    prosEmpty: "Aucun pro disponible.",
+    proSignatureTraits: "Techniques signature",
+    proReferenceFrames: "Cadres de référence",
+    faceOnFrames: "De face",
+    dtlFrames: "De derrière",
+    noFrames: "Aucun cadre disponible.",
 
     faceOn: "🎯 Face à",
     downTheLine: "🎬 De derrière",
