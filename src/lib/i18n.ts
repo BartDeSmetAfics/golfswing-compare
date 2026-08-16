@@ -128,6 +128,8 @@ const translations = {
     noUserFramesDtl: "Je hebt nog geen video geüpload van achter.",
     addVideo: "+ Video toevoegen →",
     swingNotFound: "Swing niet gevonden.",
+    swingLoadError: "Kon de slag niet laden — probeer opnieuw.",
+    tryAgain: "Opnieuw proberen",
   },
 
   en: {
@@ -244,6 +246,8 @@ const translations = {
     noUserFramesDtl: "You haven't uploaded a down-the-line video yet.",
     addVideo: "+ Add video →",
     swingNotFound: "Swing not found.",
+    swingLoadError: "Could not load swing — please try again.",
+    tryAgain: "Try again",
   },
 
   fr: {
@@ -360,6 +364,8 @@ const translations = {
     noUserFramesDtl: "Vous n'avez pas encore téléchargé une vidéo de derrière.",
     addVideo: "+ Ajouter une vidéo →",
     swingNotFound: "Swing introuvable.",
+    swingLoadError: "Impossible de charger ce swing — veuillez réessayer.",
+    tryAgain: "Réessayer",
   },
 };
 

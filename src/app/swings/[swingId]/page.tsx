@@ -49,12 +49,17 @@ export default function SwingDetailPage() {
   const [proFrames, setProFrames] = useState<ProReferenceFrame[]>([]);
   const [selectedAngle, setSelectedAngle] = useState<CameraAngle>("FACE_ON");
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [proLoading, setProLoading] = useState(false);
 
   useEffect(() => {
     fetch(`/api/swings/${swingId}`)
-      .then((r) => r.json())
-      .then((data: Swing) => { setSwing(data); setLoading(false); });
+      .then((r) => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        return r.json();
+      })
+      .then((data: Swing) => { setSwing(data); setLoading(false); })
+      .catch(() => { setLoadError(true); setLoading(false); });
   }, [swingId]);
 
   async function handleProSelect(proId: string) {
@@ -90,10 +95,16 @@ export default function SwingDetailPage() {
     );
   }
 
-  if (!swing) {
+  if (loadError || !swing) {
     return (
-      <main className="min-h-screen bg-green-950 text-white p-6 flex items-center justify-center">
-        <p>{t.swingNotFound}</p>
+      <main className="min-h-screen bg-green-950 text-white p-6 flex flex-col items-center justify-center gap-4">
+        <p className="text-red-400">{t.swingLoadError}</p>
+        <button
+          onClick={() => { setLoadError(false); setLoading(true); fetch(`/api/swings/${swingId}`).then((r) => r.ok ? r.json() : Promise.reject()).then((data: Swing) => { setSwing(data); setLoading(false); }).catch(() => { setLoadError(true); setLoading(false); }); }}
+          className="text-green-400 text-sm underline hover:text-white"
+        >
+          {t.tryAgain}
+        </button>
       </main>
     );
   }
