@@ -2,7 +2,7 @@ import { NextRequest } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { uploadBuffer, proReferenceKey } from "@/lib/storage";
-import type { SwingPhase } from "@/lib/constants";
+import type { ClubType, SwingPhase } from "@/lib/constants";
 
 function isAdmin(email: string) {
   const adminEmails = (process.env.ADMIN_EMAILS ?? "")
@@ -49,9 +49,9 @@ export async function POST(request: NextRequest) {
     await uploadBuffer(key, buffer, image.type || "image/jpeg");
 
     await prisma.proReferenceFrame.upsert({
-      where: { proId_clubType_phase: { proId, clubType, phase } },
+      where: { proId_clubType_phase: { proId: pro.id, clubType: clubType as ClubType, phase: phase as SwingPhase } },
       update: { imageKey: key, sourceNote },
-      create: { proId, clubType, phase, imageKey: key, sourceNote },
+      create: { proId: pro.id, clubType: clubType as ClubType, phase: phase as SwingPhase, imageKey: key, sourceNote },
     });
 
     return Response.json({ ok: true, key }, { status: 201 });
