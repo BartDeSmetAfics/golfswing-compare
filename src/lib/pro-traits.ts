@@ -15,7 +15,7 @@ export interface ProBio {
 export const PRO_BIOS: Record<string, ProBio> = {
   "bryson-dechambeau": {
     slug: "bryson-dechambeau",
-    avatarPath: "/pros/bryson-dechambeau.jpg",
+    avatarPath: "/pros/bryson-dechambeau.webp",
     tagline: "The Scientist — power golf through physics",
     traits: [
       {
