@@ -108,10 +108,13 @@ const translations = {
     prosTitle: "Pro golfers",
     prosEmpty: "Nog geen pro's beschikbaar.",
     proSignatureTraits: "Kenmerkende technieken",
+    proTraitsCount: "kenmerken",
     proReferenceFrames: "Referentieframes",
     faceOnFrames: "Tegenover",
     dtlFrames: "Van achter",
     noFrames: "Nog geen frames beschikbaar.",
+
+    proNotFound: "Pro niet gevonden.",
 
     // Swing detail
     faceOn: "🎯 Tegenover",
@@ -222,10 +225,13 @@ const translations = {
     prosTitle: "Pro golfers",
     prosEmpty: "No pros available yet.",
     proSignatureTraits: "Signature techniques",
+    proTraitsCount: "traits",
     proReferenceFrames: "Reference frames",
     faceOnFrames: "Face-on",
     dtlFrames: "Down-the-line",
     noFrames: "No frames available yet.",
+
+    proNotFound: "Pro not found.",
 
     faceOn: "🎯 Face-on",
     downTheLine: "🎬 Down-the-line",
@@ -335,10 +341,13 @@ const translations = {
     prosTitle: "Golfeurs pros",
     prosEmpty: "Aucun pro disponible.",
     proSignatureTraits: "Techniques signature",
+    proTraitsCount: "caractéristiques",
     proReferenceFrames: "Cadres de référence",
     faceOnFrames: "De face",
     dtlFrames: "De derrière",
     noFrames: "Aucun cadre disponible.",
+
+    proNotFound: "Pro introuvable.",
 
     faceOn: "🎯 Face à",
     downTheLine: "🎬 De derrière",

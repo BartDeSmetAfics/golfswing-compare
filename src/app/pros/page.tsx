@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import AppHeader from "@/components/AppHeader";
 import { useLocale } from "@/context/LocaleContext";
-import { getProBio } from "@/lib/pro-traits";
+import { getLocalizedProBio } from "@/lib/pro-traits";
 
 interface Pro {
   id: string;
@@ -20,7 +20,8 @@ function proInitials(name: string) {
 }
 
 function ProAvatar({ name, slug, size = 64 }: { name: string; slug: string; size?: number }) {
-  const bio = getProBio(slug);
+  const { locale } = useLocale();
+  const bio = getLocalizedProBio(slug, locale);
   const [imgError, setImgError] = useState(false);
 
   if (bio?.avatarPath && !imgError) {
@@ -48,7 +49,7 @@ function ProAvatar({ name, slug, size = 64 }: { name: string; slug: string; size
 }
 
 export default function ProsPage() {
-  const { t } = useLocale();
+  const { t, locale } = useLocale();
   const [pros, setPros] = useState<Pro[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -72,7 +73,7 @@ export default function ProsPage() {
         ) : (
           <ul className="flex flex-col gap-3">
             {pros.map((pro) => {
-              const bio = getProBio(pro.slug);
+              const bio = getLocalizedProBio(pro.slug, locale);
               return (
                 <li key={pro.id}>
                   <Link
@@ -88,7 +89,7 @@ export default function ProsPage() {
                         <p className="text-green-400 text-sm mt-0.5 truncate">{bio.tagline}</p>
                       )}
                       {bio && (
-                        <p className="text-green-600 text-xs mt-1">{bio.traits.length} kenmerken</p>
+                        <p className="text-green-600 text-xs mt-1">{bio.traits.length} {t.proTraitsCount}</p>
                       )}
                     </div>
                     <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 text-green-600 group-hover:text-green-400 transition shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>

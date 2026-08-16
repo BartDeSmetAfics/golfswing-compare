@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import AppHeader from "@/components/AppHeader";
 import { useLocale } from "@/context/LocaleContext";
-import { getProBio } from "@/lib/pro-traits";
+import { getLocalizedProBio } from "@/lib/pro-traits";
 import { SWING_PHASE_LABELS } from "@/lib/constants";
 import type { SwingPhase } from "@/lib/constants";
 
@@ -16,7 +16,8 @@ function proInitials(name: string) {
 }
 
 function ProAvatar({ name, slug, size = 64 }: { name: string; slug: string; size?: number }) {
-  const bio = getProBio(slug);
+  const { locale } = useLocale();
+  const bio = getLocalizedProBio(slug, locale);
   const [imgError, setImgError] = useState(false);
 
   if (bio?.avatarPath && !imgError) {
@@ -60,8 +61,8 @@ type AngleTab = "FACE_ON" | "DOWN_THE_LINE";
 
 export default function ProDetailPage() {
   const { proSlug } = useParams<{ proSlug: string }>();
-  const { t } = useLocale();
-  const bio = getProBio(proSlug);
+  const { t, locale } = useLocale();
+  const bio = getLocalizedProBio(proSlug, locale);
 
   const [pro, setPro] = useState<Pro | null>(null);
   const [frames, setFrames] = useState<ReferenceFrame[]>([]);
@@ -101,7 +102,7 @@ export default function ProDetailPage() {
   if (!pro) {
     return (
       <main className="min-h-screen bg-green-950 text-white p-6 flex items-center justify-center">
-        <p className="text-green-400">Pro niet gevonden.</p>
+        <p className="text-green-400">{t.proNotFound}</p>
       </main>
     );
   }
