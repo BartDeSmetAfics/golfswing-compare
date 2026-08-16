@@ -121,33 +121,32 @@ export default function SwingDetailPage() {
           </p>
         ) : (
           <>
-            {/* Angle tabs — only show if >1 angle available or prompt to add */}
+            {/* Angle tabs — always visible */}
             <div className="flex flex-col gap-2">
-              {availableAngles.length > 1 && (
-                <div className="flex rounded-xl overflow-hidden border border-green-800">
-                  {availableAngles.map((angle) => (
-                    <button
-                      key={angle}
-                      onClick={() => setSelectedAngle(angle)}
-                      className={`flex-1 py-2 text-xs font-medium transition-colors ${
-                        selectedAngle === angle
-                          ? "bg-green-600 text-white"
-                          : "bg-green-900/40 text-green-300 hover:bg-green-900"
-                      }`}
-                    >
-                      {angle === "FACE_ON" ? "🎯 Tegenover" : "🎬 Van achter"}
-                    </button>
-                  ))}
-                </div>
-              )}
+              <div className="flex rounded-xl overflow-hidden border border-green-800">
+                {CAMERA_ANGLES.map((angle) => (
+                  <button
+                    key={angle}
+                    onClick={() => setSelectedAngle(angle)}
+                    className={`flex-1 py-2 text-xs font-medium transition-colors ${
+                      selectedAngle === angle
+                        ? "bg-green-600 text-white"
+                        : "bg-green-900/40 text-green-300 hover:bg-green-900"
+                    }`}
+                  >
+                    {angle === "FACE_ON" ? "🎯 Tegenover" : "🎬 Van achter"}
+                  </button>
+                ))}
+              </div>
 
-              {missingAngle && (
+              {/* Prompt to add this angle if user doesn't have it yet */}
+              {missingAngle === selectedAngle && (
                 <Link
-                  href={`/record?swingId=${swingId}&angle=${missingAngle}`}
+                  href={`/record?swingId=${swingId}&angle=${selectedAngle}`}
                   className="flex items-center justify-center gap-2 border border-dashed border-green-700 rounded-xl py-2 text-sm text-green-400 hover:text-green-200 hover:border-green-500 transition"
                 >
                   <span>+</span>
-                  <span>{CAMERA_ANGLE_LABELS[missingAngle]} toevoegen</span>
+                  <span>Voeg jouw {selectedAngle === "FACE_ON" ? "tegenover" : "van achter"} video toe</span>
                 </Link>
               )}
             </div>
@@ -168,11 +167,21 @@ export default function SwingDetailPage() {
             )}
 
             {!proLoading && selectedProId && pairedFrames.length === 0 && (
-              <p className="text-yellow-400 text-sm">
-                {proFrames.length === 0
-                  ? `Geen ${CAMERA_ANGLE_LABELS[selectedAngle]} referentieframes gevonden voor deze pro.`
-                  : "Nog geen frames gevonden voor dit perspectief. Upload een video om te beginnen."}
-              </p>
+              <div className="bg-green-900/40 rounded-xl p-4 text-sm text-green-300 flex flex-col gap-2">
+                {proFrames.length === 0 ? (
+                  <p>Geen {selectedAngle === "FACE_ON" ? "tegenover" : "van-achter"} referentieframes voor deze pro — nog niet geseeded.</p>
+                ) : (
+                  <>
+                    <p>Je hebt nog geen video geüpload van {selectedAngle === "FACE_ON" ? "tegenover" : "van achter"}.</p>
+                    <Link
+                      href={`/record?swingId=${swingId}&angle=${selectedAngle}`}
+                      className="text-green-400 underline hover:text-green-200"
+                    >
+                      + Video toevoegen →
+                    </Link>
+                  </>
+                )}
+              </div>
             )}
           </>
         )}
