@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import { SWING_PHASE_LABELS } from "@/lib/constants";
 import type { SwingPhase } from "@/lib/constants";
 
@@ -26,25 +25,23 @@ export default function SwingPhaseComparison({ pairs }: Props) {
           <div className="grid grid-cols-2 gap-2">
             <div className="flex flex-col gap-1">
               <span className="text-xs text-green-400 text-center">You</span>
-              <div className="relative aspect-video bg-black rounded-lg overflow-hidden">
-                <Image
+              <div className="bg-black rounded-lg overflow-hidden flex items-center justify-center">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
                   src={pair.userImageUrl}
                   alt={`Your swing — ${pair.phase}`}
-                  fill
-                  className="object-cover"
-                  unoptimized
+                  className="w-full h-auto max-h-64 object-contain"
                 />
               </div>
             </div>
             <div className="flex flex-col gap-1">
               <span className="text-xs text-green-400 text-center">{pair.proName}</span>
-              <div className="relative aspect-video bg-black rounded-lg overflow-hidden">
-                <Image
+              <div className="bg-black rounded-lg overflow-hidden flex items-center justify-center">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
                   src={pair.proImageUrl}
                   alt={`${pair.proName} — ${pair.phase}`}
-                  fill
-                  className="object-cover"
-                  unoptimized
+                  className="w-full h-auto max-h-64 object-contain"
                 />
               </div>
             </div>

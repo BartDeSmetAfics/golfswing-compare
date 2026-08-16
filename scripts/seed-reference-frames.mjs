@@ -4,8 +4,6 @@
  *
  * Usage:
  *   ADMIN_SECRET=xxx node scripts/seed-reference-frames.mjs
- *
- * Set ADMIN_SECRET in Railway env vars (Settings → Variables) first.
  */
 
 import { createRequire } from "module";
@@ -24,16 +22,28 @@ if (!ADMIN_SECRET) {
 
 // Bryson DeChambeau — QyIG8LPBq_w: "Bryson Dechambeau Golf Swing in Super Slow Motion, face on"
 // 56s slow-motion iron swing, face-on angle.
-// Intro: 0-7s; Address hold: 7-12s; Slow-mo swing: 12-56s
 const BRYSON_VIDEO = "https://www.youtube.com/watch?v=QyIG8LPBq_w";
 const BRYSON_SLUG = "bryson-dechambeau";
 const BRYSON_PHASES = [
-  { phase: "ADDRESS",              seekTo: 10, note: "QyIG8LPBq_w @ ~12s" },
-  { phase: "TAKEAWAY",             seekTo: 13, note: "QyIG8LPBq_w @ ~15s" },
-  { phase: "TOP_OF_BACKSWING",     seekTo: 19, note: "QyIG8LPBq_w @ ~21s" },
-  { phase: "DOWNSWING_TRANSITION", seekTo: 24, note: "QyIG8LPBq_w @ ~26s" },
-  { phase: "IMPACT",               seekTo: 31, note: "QyIG8LPBq_w @ ~33s" },
-  { phase: "FOLLOW_THROUGH",       seekTo: 41, note: "QyIG8LPBq_w @ ~43s" },
+  { phase: "ADDRESS",              seekTo: 10,   note: "QyIG8LPBq_w @ ~10s" },
+  { phase: "TAKEAWAY",             seekTo: 13,   note: "QyIG8LPBq_w @ ~13s" },
+  { phase: "TOP_OF_BACKSWING",     seekTo: 19,   note: "QyIG8LPBq_w @ ~19s" },
+  { phase: "DOWNSWING_TRANSITION", seekTo: 24,   note: "QyIG8LPBq_w @ ~24s" },
+  { phase: "IMPACT",               seekTo: 31,   note: "QyIG8LPBq_w @ ~31s" },
+  { phase: "FOLLOW_THROUGH",       seekTo: 41,   note: "QyIG8LPBq_w @ ~41s" },
+];
+
+// Grant Horvat — D3fcCpKHQEM: "Grant Horvat Slow Motion Golf Iron Swing!"
+// 14s slow-motion short, 3/4 front view progressing to back-on at follow-through.
+const GRANT_VIDEO = "https://www.youtube.com/watch?v=D3fcCpKHQEM";
+const GRANT_SLUG = "grant-horvat";
+const GRANT_PHASES = [
+  { phase: "ADDRESS",              seekTo: 0.8,  note: "D3fcCpKHQEM @ ~0.8s" },
+  { phase: "TAKEAWAY",             seekTo: 1.8,  note: "D3fcCpKHQEM @ ~1.8s" },
+  { phase: "TOP_OF_BACKSWING",     seekTo: 4.3,  note: "D3fcCpKHQEM @ ~4.3s" },
+  { phase: "DOWNSWING_TRANSITION", seekTo: 4.8,  note: "D3fcCpKHQEM @ ~4.8s" },
+  { phase: "IMPACT",               seekTo: 5.3,  note: "D3fcCpKHQEM @ ~5.3s" },
+  { phase: "FOLLOW_THROUGH",       seekTo: 6.3,  note: "D3fcCpKHQEM @ ~6.3s" },
 ];
 
 async function captureFrame(page, seekTo) {
@@ -42,7 +52,7 @@ async function captureFrame(page, seekTo) {
     if (!player) throw new Error("No #movie_player found");
     player.seekTo(t, true);
     player.playVideo();
-    await new Promise((r) => setTimeout(r, 2200));
+    await new Promise((r) => setTimeout(r, 1500));
     player.pauseVideo();
     await new Promise((r) => setTimeout(r, 400));
     const video = document.querySelector("video");
@@ -92,6 +102,40 @@ async function uploadFrame(proSlug, phase, jpegBuffer, sourceNote) {
   return JSON.parse(text);
 }
 
+async function seedPro(browser, proSlug, videoUrl, phases) {
+  const page = await browser.newPage();
+  await page.setUserAgent(
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36"
+  );
+  await page.setViewport({ width: 1280, height: 720 });
+
+  console.log(`\n📺  Loading ${videoUrl}`);
+  await page.goto(videoUrl, { waitUntil: "domcontentloaded", timeout: 60000 });
+  await page.waitForSelector("#movie_player", { timeout: 30000 });
+  await new Promise((r) => setTimeout(r, 4000));
+
+  try {
+    const btn = await page.$('button[aria-label*="Accept"], button[aria-label*="agree"]');
+    if (btn) { await btn.click(); await new Promise((r) => setTimeout(r, 1000)); }
+  } catch (_) {}
+
+  // Prime the player so seeking works
+  await page.evaluate(() => document.querySelector("#movie_player").playVideo());
+  await new Promise((r) => setTimeout(r, 2000));
+
+  console.log(`\n🎬  Capturing 6 ${proSlug} iron swing phases…\n`);
+
+  for (const { phase, seekTo, note } of phases) {
+    process.stdout.write(`  ▸ ${phase.padEnd(24)} seekTo=${seekTo}s … `);
+    const frame = await captureFrame(page, seekTo);
+    const jpegBuffer = Buffer.from(frame.data.replace("data:image/jpeg;base64,", ""), "base64");
+    const result = await uploadFrame(proSlug, phase, jpegBuffer, `YouTube: ${note}`);
+    console.log(`✅  ${result.key}  (${frame.time}s, ${frame.w}×${frame.h})`);
+  }
+
+  await page.close();
+}
+
 async function main() {
   console.log(`\n🌐  Launching Puppeteer headless Chrome…`);
   const browser = await puppeteer.launch({
@@ -104,36 +148,11 @@ async function main() {
   });
 
   try {
-    const page = await browser.newPage();
-    await page.setUserAgent(
-      "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36"
-    );
-    await page.setViewport({ width: 1280, height: 720 });
-
-    console.log(`📺  Loading ${BRYSON_VIDEO}`);
-    await page.goto(BRYSON_VIDEO, { waitUntil: "domcontentloaded", timeout: 60000 });
-    await page.waitForSelector("#movie_player", { timeout: 30000 });
-    await new Promise((r) => setTimeout(r, 4000));
-
-    // Accept cookie consent if present
-    try {
-      const btn = await page.$('button[aria-label*="Accept"], button[aria-label*="agree"]');
-      if (btn) { await btn.click(); await new Promise((r) => setTimeout(r, 1000)); }
-    } catch (_) {}
-
-    console.log(`\n🎬  Capturing 6 Bryson iron swing phases…\n`);
-
-    for (const { phase, seekTo, note } of BRYSON_PHASES) {
-      process.stdout.write(`  ▸ ${phase.padEnd(24)} seekTo=${seekTo}s … `);
-
-      const frame = await captureFrame(page, seekTo);
-      const jpegBuffer = Buffer.from(frame.data.replace("data:image/jpeg;base64,", ""), "base64");
-      const result = await uploadFrame(BRYSON_SLUG, phase, jpegBuffer, `YouTube: ${note}`);
-
-      console.log(`✅  ${result.key}  (${frame.time}s, ${frame.w}×${frame.h})`);
-    }
-
+    await seedPro(browser, BRYSON_SLUG, BRYSON_VIDEO, BRYSON_PHASES);
     console.log("\n🏆  All Bryson iron frames seeded successfully!");
+
+    await seedPro(browser, GRANT_SLUG, GRANT_VIDEO, GRANT_PHASES);
+    console.log("\n🏆  All Grant Horvat iron frames seeded successfully!");
   } finally {
     await browser.close();
   }

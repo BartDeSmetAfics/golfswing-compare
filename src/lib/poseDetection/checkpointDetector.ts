@@ -219,18 +219,18 @@ function findPhases(
     confidence: Math.min(1, samples[impactIdx].visibility),
   });
 
-  // Follow-through: next local maximum after impact (hands swinging up and over)
+  // Follow-through: local minimum of handsY after impact (hands at highest = smallest Y value)
   let followIdx = Math.min(impactIdx + 3, n - 1);
-  let maxYAfterImpact = -Infinity;
+  let minYAfterImpact = Infinity;
   for (let i = impactIdx + 1; i < n; i++) {
-    if (handsY[i] < maxYAfterImpact && dy[i] >= 0 && i > 0 && dy[i - 1] < 0) {
-      maxYAfterImpact = handsY[i];
+    if (handsY[i] < minYAfterImpact && dy[i] >= 0 && i > 0 && dy[i - 1] < 0) {
+      minYAfterImpact = handsY[i];
       followIdx = i;
     }
   }
-  // Fallback: halfway between impact and end
+  // Fallback: 70% between impact and end
   if (followIdx === Math.min(impactIdx + 3, n - 1)) {
-    followIdx = Math.min(impactIdx + Math.floor((n - impactIdx) * 0.5), n - 1);
+    followIdx = Math.min(impactIdx + Math.floor((n - impactIdx) * 0.7), n - 1);
   }
 
   checkpoints.push({

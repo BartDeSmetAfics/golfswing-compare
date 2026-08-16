@@ -27,11 +27,13 @@ export default function CoachingFeedback({ swingId, proId, existingAnalysis }: P
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ proId }),
       });
+      const text = await res.text();
       if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error ?? "Analysis failed");
+        let msg = "Analysis failed";
+        try { msg = (JSON.parse(text) as { error?: string }).error ?? msg; } catch (_) {}
+        throw new Error(msg);
       }
-      const data = await res.json() as { result: AnalysisResult };
+      const data = JSON.parse(text) as { result: AnalysisResult };
       setAnalysis(data.result as AnalysisResult);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Analysis failed");

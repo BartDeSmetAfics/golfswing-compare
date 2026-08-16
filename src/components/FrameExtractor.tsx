@@ -30,14 +30,35 @@ export default function FrameExtractor({
       try {
         onProgress(0, "Loading pose detector…");
 
-        const { detectCheckpoints } = await import(
-          "@/lib/poseDetection/checkpointDetector"
-        );
-
-        const checkpoints: CheckpointResult[] = await detectCheckpoints(
-          videoBlob,
-          (pct) => onProgress(pct * 0.8, "Detecting swing phases…")
-        );
+        let checkpoints: CheckpointResult[];
+        try {
+          const { detectCheckpoints } = await import(
+            "@/lib/poseDetection/checkpointDetector"
+          );
+          checkpoints = await Promise.race([
+            detectCheckpoints(videoBlob, (pct) =>
+              onProgress(pct * 0.8, "Detecting swing phases…")
+            ),
+            new Promise<never>((_, rej) =>
+              setTimeout(() => rej(new Error("Pose detection timed out")), 60000)
+            ),
+          ]);
+        } catch {
+          // Fallback: evenly divide video into 6 phase timestamps
+          onProgress(30, "Using even split (pose detection unavailable)…");
+          const tmpUrl = URL.createObjectURL(videoBlob);
+          const tmpVid = document.createElement("video");
+          tmpVid.src = tmpUrl;
+          tmpVid.playsInline = true;
+          await new Promise<void>((res) => { tmpVid.onloadedmetadata = () => res(); setTimeout(res, 5000); });
+          const dur = (tmpVid.duration || 5) * 1000;
+          URL.revokeObjectURL(tmpUrl);
+          checkpoints = SWING_PHASES.map((phase, i) => ({
+            phase,
+            timestampMs: Math.round(dur * (i + 0.5) / SWING_PHASES.length),
+            confidence: 0.5,
+          }));
+        }
 
         onProgress(80, "Extracting frames…");
 
@@ -50,12 +71,26 @@ export default function FrameExtractor({
         const video = document.createElement("video");
         video.src = videoUrl;
         video.muted = true;
-        await new Promise<void>((res) => { video.onloadedmetadata = () => res(); });
+        video.playsInline = true;
+        // iOS requires the element to be in the DOM for metadata + seeking to work
+        video.style.position = "fixed";
+        video.style.opacity = "0";
+        video.style.pointerEvents = "none";
+        document.body.appendChild(video);
+        await new Promise<void>((res, rej) => {
+          video.onloadedmetadata = () => res();
+          setTimeout(() => rej(new Error("Video metadata timeout")), 15000);
+        });
 
         const canvas = document.createElement("canvas");
         const ctx = canvas.getContext("2d")!;
-        canvas.width = 640;
-        canvas.height = 360;
+        // Preserve actual video aspect ratio — don't force 16:9
+        const MAX_DIM = 1280;
+        const vw = video.videoWidth || 640;
+        const vh = video.videoHeight || 360;
+        const scale = Math.min(MAX_DIM / vw, MAX_DIM / vh, 1);
+        canvas.width = Math.round(vw * scale);
+        canvas.height = Math.round(vh * scale);
 
         for (let i = 0; i < checkpoints.length; i++) {
           const cp = checkpoints[i];
@@ -63,6 +98,8 @@ export default function FrameExtractor({
           await new Promise<void>((res) => {
             const handler = () => { video.removeEventListener("seeked", handler); res(); };
             video.addEventListener("seeked", handler);
+            // Fallback if seeked never fires (iOS quirk)
+            setTimeout(res, 2000);
           });
 
           ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
@@ -79,6 +116,7 @@ export default function FrameExtractor({
           onProgress(80 + ((i + 1) / checkpoints.length) * 15, `Uploaded ${cp.phase}`);
         }
 
+        document.body.removeChild(video);
         URL.revokeObjectURL(videoUrl);
 
         // Save metadata to DB
