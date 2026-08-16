@@ -4,14 +4,6 @@ import { prisma } from "@/lib/prisma";
 import { uploadBuffer, proReferenceKey } from "@/lib/storage";
 import type { SwingPhase } from "@/lib/constants";
 
-export async function GET(request: NextRequest) {
-  if (!checkAdminKey(request)) {
-    return Response.json({ error: "Forbidden" }, { status: 403 });
-  }
-  const pros = await prisma.pro.findMany({ select: { id: true, name: true, slug: true } });
-  return Response.json(pros);
-}
-
 function isAdmin(email: string) {
   const adminEmails = (process.env.ADMIN_EMAILS ?? "")
     .split(",")
@@ -35,17 +27,20 @@ export async function POST(request: NextRequest) {
   }
 
   const formData = await request.formData();
-  const proId = formData.get("proId") as string;
+  const proId = (formData.get("proId") as string) || "";
+  const proSlug = (formData.get("proSlug") as string) || "";
   const clubType = formData.get("clubType") as string;
   const phase = formData.get("phase") as string;
   const sourceNote = (formData.get("sourceNote") as string) ?? "";
   const image = formData.get("image") as File | null;
 
-  if (!proId || !clubType || !phase || !image) {
-    return Response.json({ error: "proId, clubType, phase and image required" }, { status: 400 });
+  if (!clubType || !phase || !image || (!proId && !proSlug)) {
+    return Response.json({ error: "proId or proSlug, clubType, phase and image required" }, { status: 400 });
   }
 
-  const pro = await prisma.pro.findUnique({ where: { id: proId } });
+  const pro = proId
+    ? await prisma.pro.findUnique({ where: { id: proId } })
+    : await prisma.pro.findUnique({ where: { slug: proSlug } });
   if (!pro) return Response.json({ error: "Pro not found" }, { status: 404 });
 
   try {

@@ -3,17 +3,14 @@
  * and uploads them to the Railway admin API.
  *
  * Usage:
- *   ADMIN_SECRET=xxx RAILWAY_URL=https://... node scripts/seed-reference-frames.mjs
+ *   ADMIN_SECRET=xxx node scripts/seed-reference-frames.mjs
  *
- * ADMIN_SECRET must also be set in Railway environment variables.
+ * Set ADMIN_SECRET in Railway env vars (Settings → Variables) first.
  */
 
-import puppeteer from "puppeteer";
-import { createReadStream } from "fs";
-import { writeFile, unlink } from "fs/promises";
-import { tmpdir } from "os";
-import { join } from "path";
-import { Readable } from "stream";
+import { createRequire } from "module";
+const require = createRequire(import.meta.url);
+const puppeteer = require("puppeteer");
 
 const RAILWAY_URL =
   process.env.RAILWAY_URL ||
@@ -26,8 +23,10 @@ if (!ADMIN_SECRET) {
 }
 
 // Bryson DeChambeau — QyIG8LPBq_w: "Bryson Dechambeau Golf Swing in Super Slow Motion, face on"
-// The video is ~56s slow motion of a single iron swing, face-on angle.
-// Timing: intro 0-7s, address 7-12s, slo-mo swing 12-56s.
+// 56s slow-motion iron swing, face-on angle.
+// Intro: 0-7s; Address hold: 7-12s; Slow-mo swing: 12-56s
+const BRYSON_VIDEO = "https://www.youtube.com/watch?v=QyIG8LPBq_w";
+const BRYSON_SLUG = "bryson-dechambeau";
 const BRYSON_PHASES = [
   { phase: "ADDRESS",              seekTo: 10, note: "QyIG8LPBq_w @ ~12s" },
   { phase: "TAKEAWAY",             seekTo: 13, note: "QyIG8LPBq_w @ ~15s" },
@@ -36,18 +35,9 @@ const BRYSON_PHASES = [
   { phase: "IMPACT",               seekTo: 31, note: "QyIG8LPBq_w @ ~33s" },
   { phase: "FOLLOW_THROUGH",       seekTo: 41, note: "QyIG8LPBq_w @ ~43s" },
 ];
-const BRYSON_VIDEO = "https://www.youtube.com/watch?v=QyIG8LPBq_w";
-
-async function getPros() {
-  const res = await fetch(`${RAILWAY_URL}/api/admin/reference-frames`, {
-    headers: { "x-admin-key": ADMIN_SECRET },
-  });
-  if (!res.ok) throw new Error(`GET pros failed: ${res.status} ${await res.text()}`);
-  return res.json();
-}
 
 async function captureFrame(page, seekTo) {
-  const result = await page.evaluate(async (t) => {
+  return page.evaluate(async (t) => {
     const player = document.querySelector("#movie_player");
     if (!player) throw new Error("No #movie_player found");
     player.seekTo(t, true);
@@ -67,11 +57,9 @@ async function captureFrame(page, seekTo) {
       h: c.height,
     };
   }, seekTo);
-  return result;
 }
 
-async function uploadFrame(proId, phase, jpegBuffer, sourceNote) {
-  // Build FormData manually using boundary
+async function uploadFrame(proSlug, phase, jpegBuffer, sourceNote) {
   const boundary = "----FormBoundary" + Math.random().toString(36).slice(2);
   const crlf = "\r\n";
 
@@ -79,7 +67,7 @@ async function uploadFrame(proId, phase, jpegBuffer, sourceNote) {
     `--${boundary}${crlf}Content-Disposition: form-data; name="${name}"${crlf}${crlf}${value}${crlf}`;
 
   const parts = [
-    field("proId", proId),
+    field("proSlug", proSlug),
     field("clubType", "IRON"),
     field("phase", phase),
     field("sourceNote", sourceNote),
@@ -99,27 +87,15 @@ async function uploadFrame(proId, phase, jpegBuffer, sourceNote) {
     body,
   });
 
-  if (!res.ok) throw new Error(`Upload failed: ${res.status} ${await res.text()}`);
-  return res.json();
+  const text = await res.text();
+  if (!res.ok) throw new Error(`Upload failed: ${res.status} ${text}`);
+  return JSON.parse(text);
 }
 
 async function main() {
-  console.log("🔍  Fetching pro IDs from Railway…");
-  const pros = await getPros();
-  console.log("   Pros:", pros.map((p) => `${p.name} (${p.id})`).join(", "));
-
-  const bryson = pros.find(
-    (p) => p.slug === "bryson-dechambeau" || p.name.toLowerCase().includes("bryson")
-  );
-  if (!bryson) {
-    console.error("❌  Bryson not found in pros list. Current pros:", pros);
-    process.exit(1);
-  }
-  console.log(`✅  Found Bryson: ${bryson.id}`);
-
-  console.log("\n🌐  Launching Puppeteer…");
+  console.log(`\n🌐  Launching Puppeteer headless Chrome…`);
   const browser = await puppeteer.launch({
-    headless: "new",
+    headless: true,
     args: [
       "--no-sandbox",
       "--disable-setuid-sandbox",
@@ -127,43 +103,40 @@ async function main() {
     ],
   });
 
-  const page = await browser.newPage();
-  await page.setUserAgent(
-    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36"
-  );
-  await page.setViewport({ width: 1280, height: 720 });
-
-  console.log(`\n📺  Loading YouTube: ${BRYSON_VIDEO}`);
-  await page.goto(BRYSON_VIDEO, { waitUntil: "networkidle2", timeout: 60000 });
-
-  // Wait for player
-  await page.waitForSelector("#movie_player", { timeout: 30000 });
-  await new Promise((r) => setTimeout(r, 3000));
-
-  // Dismiss consent / cookie popup if present
   try {
-    const acceptBtn = await page.$('button[aria-label*="Accept"]');
-    if (acceptBtn) {
-      await acceptBtn.click();
-      await new Promise((r) => setTimeout(r, 1000));
+    const page = await browser.newPage();
+    await page.setUserAgent(
+      "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36"
+    );
+    await page.setViewport({ width: 1280, height: 720 });
+
+    console.log(`📺  Loading ${BRYSON_VIDEO}`);
+    await page.goto(BRYSON_VIDEO, { waitUntil: "domcontentloaded", timeout: 60000 });
+    await page.waitForSelector("#movie_player", { timeout: 30000 });
+    await new Promise((r) => setTimeout(r, 4000));
+
+    // Accept cookie consent if present
+    try {
+      const btn = await page.$('button[aria-label*="Accept"], button[aria-label*="agree"]');
+      if (btn) { await btn.click(); await new Promise((r) => setTimeout(r, 1000)); }
+    } catch (_) {}
+
+    console.log(`\n🎬  Capturing 6 Bryson iron swing phases…\n`);
+
+    for (const { phase, seekTo, note } of BRYSON_PHASES) {
+      process.stdout.write(`  ▸ ${phase.padEnd(24)} seekTo=${seekTo}s … `);
+
+      const frame = await captureFrame(page, seekTo);
+      const jpegBuffer = Buffer.from(frame.data.replace("data:image/jpeg;base64,", ""), "base64");
+      const result = await uploadFrame(BRYSON_SLUG, phase, jpegBuffer, `YouTube: ${note}`);
+
+      console.log(`✅  ${result.key}  (${frame.time}s, ${frame.w}×${frame.h})`);
     }
-  } catch (_) {}
 
-  console.log("\n🎬  Capturing Bryson DeChambeau frames…\n");
-
-  for (const { phase, seekTo, note } of BRYSON_PHASES) {
-    process.stdout.write(`  ▸ ${phase.padEnd(24)} seekTo=${seekTo}s … `);
-
-    const frame = await captureFrame(page, seekTo);
-    const base64 = frame.data.replace("data:image/jpeg;base64,", "");
-    const jpegBuffer = Buffer.from(base64, "base64");
-
-    const result = await uploadFrame(bryson.id, phase, jpegBuffer, `YouTube: ${note}`);
-    console.log(`✅  uploaded → ${result.key}  (frame at ${frame.time}s, ${frame.w}×${frame.h})`);
+    console.log("\n🏆  All Bryson iron frames seeded successfully!");
+  } finally {
+    await browser.close();
   }
-
-  await browser.close();
-  console.log("\n🏆  All Bryson iron frames seeded!");
 }
 
 main().catch((err) => {
