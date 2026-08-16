@@ -52,7 +52,7 @@ export const PRO_BIOS: Record<string, ProBio> = {
   },
   "grant-horvat": {
     slug: "grant-horvat",
-    avatarPath: "/pros/grant-horvat.jpg",
+    avatarPath: "/pros/grant-horvat.webp",
     tagline: "Pure tempo and natural athleticism",
     traits: [
       {
