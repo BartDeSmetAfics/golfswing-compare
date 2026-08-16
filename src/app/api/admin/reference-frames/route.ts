@@ -2,7 +2,7 @@ import { NextRequest } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { uploadBuffer, proReferenceKey } from "@/lib/storage";
-import type { ClubType, SwingPhase } from "@/lib/constants";
+import type { ClubType, SwingPhase, CameraAngle } from "@/lib/constants";
 
 function isAdmin(email: string) {
   const adminEmails = (process.env.ADMIN_EMAILS ?? "")
@@ -31,6 +31,7 @@ export async function POST(request: NextRequest) {
   const proSlug = (formData.get("proSlug") as string) || "";
   const clubType = formData.get("clubType") as string;
   const phase = formData.get("phase") as string;
+  const cameraAngle = ((formData.get("cameraAngle") as string) || "FACE_ON") as CameraAngle;
   const sourceNote = (formData.get("sourceNote") as string) ?? "";
   const image = formData.get("image") as File | null;
 
@@ -44,14 +45,28 @@ export async function POST(request: NextRequest) {
   if (!pro) return Response.json({ error: "Pro not found" }, { status: 404 });
 
   try {
-    const key = proReferenceKey(pro.slug, clubType, phase as SwingPhase);
+    const key = proReferenceKey(pro.slug, clubType, phase, cameraAngle);
     const buffer = Buffer.from(await image.arrayBuffer());
     await uploadBuffer(key, buffer, image.type || "image/jpeg");
 
     await prisma.proReferenceFrame.upsert({
-      where: { proId_clubType_phase: { proId: pro.id, clubType: clubType as ClubType, phase: phase as SwingPhase } },
+      where: {
+        proId_clubType_phase_cameraAngle: {
+          proId: pro.id,
+          clubType: clubType as ClubType,
+          phase: phase as SwingPhase,
+          cameraAngle,
+        },
+      },
       update: { imageKey: key, sourceNote },
-      create: { proId: pro.id, clubType: clubType as ClubType, phase: phase as SwingPhase, imageKey: key, sourceNote },
+      create: {
+        proId: pro.id,
+        clubType: clubType as ClubType,
+        phase: phase as SwingPhase,
+        cameraAngle,
+        imageKey: key,
+        sourceNote,
+      },
     });
 
     return Response.json({ ok: true, key }, { status: 201 });

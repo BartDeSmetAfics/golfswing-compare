@@ -20,11 +20,12 @@ if (!ADMIN_SECRET) {
   process.exit(1);
 }
 
-// Bryson DeChambeau — QyIG8LPBq_w: "Bryson Dechambeau Golf Swing in Super Slow Motion, face on"
-// 56s slow-motion iron swing, face-on angle.
-const BRYSON_VIDEO = "https://www.youtube.com/watch?v=QyIG8LPBq_w";
+// ─── Bryson DeChambeau ───────────────────────────────────────────────────────
 const BRYSON_SLUG = "bryson-dechambeau";
-const BRYSON_PHASES = [
+
+// FACE_ON: QyIG8LPBq_w — "Bryson Dechambeau Golf Swing in Super Slow Motion, face on" (56s)
+const BRYSON_FACE_ON_VIDEO = "https://www.youtube.com/watch?v=QyIG8LPBq_w";
+const BRYSON_FACE_ON_PHASES = [
   { phase: "ADDRESS",              seekTo: 5,    note: "QyIG8LPBq_w @ ~5s"  },
   { phase: "TAKEAWAY",             seekTo: 10,   note: "QyIG8LPBq_w @ ~10s" },
   { phase: "TOP_OF_BACKSWING",     seekTo: 22,   note: "QyIG8LPBq_w @ ~22s" },
@@ -33,11 +34,16 @@ const BRYSON_PHASES = [
   { phase: "FOLLOW_THROUGH",       seekTo: 45,   note: "QyIG8LPBq_w @ ~45s" },
 ];
 
-// Grant Horvat — D3fcCpKHQEM: "Grant Horvat Slow Motion Golf Iron Swing!"
-// 14s slow-motion short, 3/4 front view progressing to back-on at follow-through.
-const GRANT_VIDEO = "https://www.youtube.com/watch?v=D3fcCpKHQEM";
+// DOWN_THE_LINE: TODO — find a good DTL slow-motion video for Bryson and update timestamps
+// const BRYSON_DTL_VIDEO = "https://www.youtube.com/watch?v=TODO";
+// const BRYSON_DTL_PHASES = [ ... ];
+
+// ─── Grant Horvat ─────────────────────────────────────────────────────────────
 const GRANT_SLUG = "grant-horvat";
-const GRANT_PHASES = [
+
+// FACE_ON: D3fcCpKHQEM — "Grant Horvat Slow Motion Golf Iron Swing!" (14s, 3/4 front view)
+const GRANT_FACE_ON_VIDEO = "https://www.youtube.com/watch?v=D3fcCpKHQEM";
+const GRANT_FACE_ON_PHASES = [
   { phase: "ADDRESS",              seekTo: 0.8,  note: "D3fcCpKHQEM @ ~0.8s" },
   { phase: "TAKEAWAY",             seekTo: 1.8,  note: "D3fcCpKHQEM @ ~1.8s" },
   { phase: "TOP_OF_BACKSWING",     seekTo: 4.3,  note: "D3fcCpKHQEM @ ~4.3s" },
@@ -45,6 +51,10 @@ const GRANT_PHASES = [
   { phase: "IMPACT",               seekTo: 5.3,  note: "D3fcCpKHQEM @ ~5.3s" },
   { phase: "FOLLOW_THROUGH",       seekTo: 6.3,  note: "D3fcCpKHQEM @ ~6.3s" },
 ];
+
+// DOWN_THE_LINE: TODO — find a good DTL slow-motion video for Grant and update timestamps
+// const GRANT_DTL_VIDEO = "https://www.youtube.com/watch?v=TODO";
+// const GRANT_DTL_PHASES = [ ... ];
 
 async function captureFrame(page, seekTo) {
   return page.evaluate(async (t) => {
@@ -69,7 +79,7 @@ async function captureFrame(page, seekTo) {
   }, seekTo);
 }
 
-async function uploadFrame(proSlug, phase, jpegBuffer, sourceNote) {
+async function uploadFrame(proSlug, phase, cameraAngle, jpegBuffer, sourceNote) {
   const boundary = "----FormBoundary" + Math.random().toString(36).slice(2);
   const crlf = "\r\n";
 
@@ -80,6 +90,7 @@ async function uploadFrame(proSlug, phase, jpegBuffer, sourceNote) {
     field("proSlug", proSlug),
     field("clubType", "IRON"),
     field("phase", phase),
+    field("cameraAngle", cameraAngle),
     field("sourceNote", sourceNote),
     `--${boundary}${crlf}Content-Disposition: form-data; name="image"; filename="frame.jpg"${crlf}Content-Type: image/jpeg${crlf}${crlf}`,
   ];
@@ -102,7 +113,7 @@ async function uploadFrame(proSlug, phase, jpegBuffer, sourceNote) {
   return JSON.parse(text);
 }
 
-async function seedPro(browser, proSlug, videoUrl, phases) {
+async function seedPro(browser, proSlug, videoUrl, phases, cameraAngle = "FACE_ON") {
   const page = await browser.newPage();
   await page.setUserAgent(
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36"
@@ -123,13 +134,13 @@ async function seedPro(browser, proSlug, videoUrl, phases) {
   await page.evaluate(() => document.querySelector("#movie_player").playVideo());
   await new Promise((r) => setTimeout(r, 2000));
 
-  console.log(`\n🎬  Capturing 6 ${proSlug} iron swing phases…\n`);
+  console.log(`\n🎬  Capturing 6 ${proSlug} [${cameraAngle}] iron swing phases…\n`);
 
   for (const { phase, seekTo, note } of phases) {
     process.stdout.write(`  ▸ ${phase.padEnd(24)} seekTo=${seekTo}s … `);
     const frame = await captureFrame(page, seekTo);
     const jpegBuffer = Buffer.from(frame.data.replace("data:image/jpeg;base64,", ""), "base64");
-    const result = await uploadFrame(proSlug, phase, jpegBuffer, `YouTube: ${note}`);
+    const result = await uploadFrame(proSlug, phase, cameraAngle, jpegBuffer, `YouTube: ${note}`);
     console.log(`✅  ${result.key}  (${frame.time}s, ${frame.w}×${frame.h})`);
   }
 
@@ -151,12 +162,18 @@ async function main() {
 
   try {
     if (target === "all" || target === "bryson") {
-      await seedPro(browser, BRYSON_SLUG, BRYSON_VIDEO, BRYSON_PHASES);
-      console.log("\n🏆  All Bryson iron frames seeded successfully!");
+      await seedPro(browser, BRYSON_SLUG, BRYSON_FACE_ON_VIDEO, BRYSON_FACE_ON_PHASES, "FACE_ON");
+      console.log("\n🏆  Bryson FACE_ON frames seeded!");
+      // Uncomment when DTL video + timestamps are ready:
+      // await seedPro(browser, BRYSON_SLUG, BRYSON_DTL_VIDEO, BRYSON_DTL_PHASES, "DOWN_THE_LINE");
+      // console.log("🏆  Bryson DOWN_THE_LINE frames seeded!");
     }
     if (target === "all" || target === "grant") {
-      await seedPro(browser, GRANT_SLUG, GRANT_VIDEO, GRANT_PHASES);
-      console.log("\n🏆  All Grant Horvat iron frames seeded successfully!");
+      await seedPro(browser, GRANT_SLUG, GRANT_FACE_ON_VIDEO, GRANT_FACE_ON_PHASES, "FACE_ON");
+      console.log("\n🏆  Grant Horvat FACE_ON frames seeded!");
+      // Uncomment when DTL video + timestamps are ready:
+      // await seedPro(browser, GRANT_SLUG, GRANT_DTL_VIDEO, GRANT_DTL_PHASES, "DOWN_THE_LINE");
+      // console.log("🏆  Grant Horvat DOWN_THE_LINE frames seeded!");
     }
   } finally {
     await browser.close();

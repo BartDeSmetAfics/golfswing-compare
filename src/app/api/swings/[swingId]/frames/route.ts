@@ -2,10 +2,10 @@ import { NextRequest } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { getUploadUrl, swingFrameKey } from "@/lib/storage";
-import type { SwingPhase } from "@/lib/constants";
+import type { SwingPhase, CameraAngle } from "@/lib/constants";
 
 export async function GET(
-  _req: Request,
+  req: NextRequest,
   { params }: { params: Promise<{ swingId: string }> }
 ) {
   const session = await auth();
@@ -16,6 +16,8 @@ export async function GET(
     where: { id: swingId, userId: session.user.id },
   });
   if (!swing) return Response.json({ error: "Not found" }, { status: 404 });
+
+  const cameraAngle = (req.nextUrl.searchParams.get("cameraAngle") ?? "FACE_ON") as CameraAngle;
 
   const phases: SwingPhase[] = [
     "ADDRESS",
@@ -28,7 +30,7 @@ export async function GET(
 
   const uploadUrls: Record<string, string> = {};
   for (const phase of phases) {
-    const key = swingFrameKey(session.user.id, swingId, phase);
+    const key = swingFrameKey(session.user.id, swingId, phase, cameraAngle);
     uploadUrls[phase] = await getUploadUrl(key, "image/jpeg");
   }
 
@@ -50,6 +52,7 @@ export async function POST(
 
   const frames: Array<{
     phase: SwingPhase;
+    cameraAngle: CameraAngle;
     timestampMs: number;
     confidence: number;
   }> = await request.json();
@@ -60,17 +63,15 @@ export async function POST(
   });
 
   for (const frame of frames) {
-    const key = swingFrameKey(session.user.id, swingId, frame.phase);
+    const angle = frame.cameraAngle ?? "FACE_ON";
+    const key = swingFrameKey(session.user.id, swingId, frame.phase, angle);
     await prisma.swingFrame.upsert({
-      where: { swingId_phase: { swingId, phase: frame.phase } },
-      update: {
-        timestampMs: frame.timestampMs,
-        imageKey: key,
-        confidence: frame.confidence,
-      },
+      where: { swingId_phase_cameraAngle: { swingId, phase: frame.phase, cameraAngle: angle } },
+      update: { timestampMs: frame.timestampMs, imageKey: key, confidence: frame.confidence },
       create: {
         swingId,
         phase: frame.phase,
+        cameraAngle: angle,
         timestampMs: frame.timestampMs,
         imageKey: key,
         confidence: frame.confidence,
@@ -78,6 +79,7 @@ export async function POST(
     });
   }
 
+  // Mark as PROCESSED only when at least one angle is complete
   await prisma.swing.update({
     where: { id: swingId },
     data: { status: "PROCESSED" },

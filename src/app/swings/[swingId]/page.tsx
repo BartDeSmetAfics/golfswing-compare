@@ -2,15 +2,17 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
+import Link from "next/link";
 import ProSelector from "@/components/ProSelector";
 import SwingPhaseComparison from "@/components/SwingPhaseComparison";
 import CoachingFeedback from "@/components/CoachingFeedback";
 import AppHeader from "@/components/AppHeader";
-import type { SwingPhase } from "@/lib/constants";
-import { SWING_PHASES } from "@/lib/constants";
+import type { SwingPhase, CameraAngle } from "@/lib/constants";
+import { SWING_PHASES, CAMERA_ANGLES, CAMERA_ANGLE_LABELS } from "@/lib/constants";
 
 interface SwingFrame {
   phase: SwingPhase;
+  cameraAngle: CameraAngle;
   imageUrl: string;
   timestampMs: number;
 }
@@ -24,6 +26,7 @@ interface Swing {
 
 interface ProReferenceFrame {
   phase: SwingPhase;
+  cameraAngle: CameraAngle;
   imageUrl: string;
 }
 
@@ -33,6 +36,7 @@ export default function SwingDetailPage() {
   const [selectedProId, setSelectedProId] = useState<string | null>(null);
   const [selectedProName, setSelectedProName] = useState<string>("");
   const [proFrames, setProFrames] = useState<ProReferenceFrame[]>([]);
+  const [selectedAngle, setSelectedAngle] = useState<CameraAngle>("FACE_ON");
   const [loading, setLoading] = useState(true);
   const [proLoading, setProLoading] = useState(false);
 
@@ -48,7 +52,7 @@ export default function SwingDetailPage() {
 
     const [prosRes, framesRes] = await Promise.all([
       fetch("/api/pros"),
-      fetch(`/api/pros/${proId}?clubType=${swing?.clubType ?? "IRON"}`),
+      fetch(`/api/pros/${proId}?clubType=${swing?.clubType ?? "IRON"}&cameraAngle=${selectedAngle}`),
     ]);
     const pros = await prosRes.json() as Array<{ id: string; name: string }>;
     const frames = await framesRes.json() as ProReferenceFrame[];
@@ -58,6 +62,15 @@ export default function SwingDetailPage() {
     setProFrames(frames);
     setProLoading(false);
   }
+
+  // When angle changes, reload pro frames for the new angle
+  useEffect(() => {
+    if (!selectedProId || !swing) return;
+    setProLoading(true);
+    fetch(`/api/pros/${selectedProId}?clubType=${swing.clubType}&cameraAngle=${selectedAngle}`)
+      .then((r) => r.json())
+      .then((frames: ProReferenceFrame[]) => { setProFrames(frames); setProLoading(false); });
+  }, [selectedAngle]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (loading) {
     return (
@@ -70,21 +83,32 @@ export default function SwingDetailPage() {
   if (!swing) {
     return (
       <main className="min-h-screen bg-green-950 text-white p-6 flex items-center justify-center">
-        <p>Swing not found.</p>
+        <p>Swing niet gevonden.</p>
       </main>
     );
   }
 
+  // Which angles does this swing have frames for?
+  const availableAngles = CAMERA_ANGLES.filter((angle) =>
+    swing.frames.some((f) => f.cameraAngle === angle)
+  );
+
+  // Filter user frames by selected angle
+  const userFramesForAngle = swing.frames.filter((f) => f.cameraAngle === selectedAngle);
+
   const pairedFrames = SWING_PHASES.filter((phase) => {
-    const userFrame = swing.frames.find((f) => f.phase === phase);
+    const userFrame = userFramesForAngle.find((f) => f.phase === phase);
     const proFrame = proFrames.find((f) => f.phase === phase);
     return userFrame && proFrame;
   }).map((phase) => ({
     phase,
-    userImageUrl: swing.frames.find((f) => f.phase === phase)!.imageUrl,
+    userImageUrl: userFramesForAngle.find((f) => f.phase === phase)!.imageUrl,
     proImageUrl: proFrames.find((f) => f.phase === phase)!.imageUrl,
     proName: selectedProName,
   }));
+
+  // Which angle is missing for this swing?
+  const missingAngle = CAMERA_ANGLES.find((a) => !availableAngles.includes(a));
 
   return (
     <main className="min-h-screen bg-green-950 text-white p-6 pb-16">
@@ -93,10 +117,41 @@ export default function SwingDetailPage() {
 
         {swing.status !== "PROCESSED" ? (
           <p className="text-yellow-400 text-sm">
-            Swing is still being processed — check back in a moment.
+            Swing wordt nog verwerkt — kom zo terug.
           </p>
         ) : (
           <>
+            {/* Angle tabs — only show if >1 angle available or prompt to add */}
+            <div className="flex flex-col gap-2">
+              {availableAngles.length > 1 && (
+                <div className="flex rounded-xl overflow-hidden border border-green-800">
+                  {availableAngles.map((angle) => (
+                    <button
+                      key={angle}
+                      onClick={() => setSelectedAngle(angle)}
+                      className={`flex-1 py-2 text-xs font-medium transition-colors ${
+                        selectedAngle === angle
+                          ? "bg-green-600 text-white"
+                          : "bg-green-900/40 text-green-300 hover:bg-green-900"
+                      }`}
+                    >
+                      {angle === "FACE_ON" ? "🎯 Tegenover" : "🎬 Van achter"}
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {missingAngle && (
+                <Link
+                  href={`/record?swingId=${swingId}&angle=${missingAngle}`}
+                  className="flex items-center justify-center gap-2 border border-dashed border-green-700 rounded-xl py-2 text-sm text-green-400 hover:text-green-200 hover:border-green-500 transition"
+                >
+                  <span>+</span>
+                  <span>{CAMERA_ANGLE_LABELS[missingAngle]} toevoegen</span>
+                </Link>
+              )}
+            </div>
+
             <ProSelector selected={selectedProId} onSelect={handleProSelect} />
 
             {proLoading && (
@@ -108,16 +163,15 @@ export default function SwingDetailPage() {
             {!proLoading && pairedFrames.length > 0 && (
               <>
                 <SwingPhaseComparison pairs={pairedFrames} />
-                <CoachingFeedback
-                  swingId={swingId}
-                  proId={selectedProId!}
-                />
+                <CoachingFeedback swingId={swingId} proId={selectedProId!} cameraAngle={selectedAngle} />
               </>
             )}
 
             {!proLoading && selectedProId && pairedFrames.length === 0 && (
               <p className="text-yellow-400 text-sm">
-                No reference frames found for this pro yet. Upload them in the admin panel.
+                {proFrames.length === 0
+                  ? `Geen ${CAMERA_ANGLE_LABELS[selectedAngle]} referentieframes gevonden voor deze pro.`
+                  : "Nog geen frames gevonden voor dit perspectief. Upload een video om te beginnen."}
               </p>
             )}
           </>

@@ -16,12 +16,12 @@ export function swingVideoKey(userId: string, swingId: string, ext = "webm") {
   return `users/${userId}/swings/${swingId}/video.${ext}`;
 }
 
-export function swingFrameKey(userId: string, swingId: string, phase: string) {
-  return `users/${userId}/swings/${swingId}/frames/${phase}.jpg`;
+export function swingFrameKey(userId: string, swingId: string, phase: string, angle = "FACE_ON") {
+  return `users/${userId}/swings/${swingId}/frames/${angle}/${phase}.jpg`;
 }
 
-export function proReferenceKey(proSlug: string, clubType: string, phase: string) {
-  return `pros/${proSlug}/${clubType}/${phase}.jpg`;
+export function proReferenceKey(proSlug: string, clubType: string, phase: string, angle = "FACE_ON") {
+  return `pros/${proSlug}/${clubType}/${angle}/${phase}.jpg`;
 }
 
 export async function getUploadUrl(key: string, contentType: string) {

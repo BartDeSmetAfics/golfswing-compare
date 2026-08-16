@@ -12,9 +12,10 @@ export async function GET(
 
   const { proId } = await params;
   const clubType = request.nextUrl.searchParams.get("clubType") ?? "IRON";
+  const cameraAngle = request.nextUrl.searchParams.get("cameraAngle") ?? "FACE_ON";
 
   const frames = await prisma.proReferenceFrame.findMany({
-    where: { proId, clubType: clubType as "IRON" },
+    where: { proId, clubType: clubType as "IRON", cameraAngle: cameraAngle as "FACE_ON" | "DOWN_THE_LINE" },
     orderBy: { phase: "asc" },
   });
 

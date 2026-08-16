@@ -46,6 +46,11 @@ enum SwingPhase {
   FOLLOW_THROUGH
 }
 
+enum CameraAngle {
+  FACE_ON
+  DOWN_THE_LINE
+}
+
 enum SwingStatus {
   UPLOADED
   PROCESSING
@@ -66,29 +71,31 @@ model Swing {
 }
 
 model SwingFrame {
-  id          String     @id @default(cuid())
+  id          String      @id @default(cuid())
   swingId     String
-  swing       Swing      @relation(fields: [swingId], references: [id])
+  swing       Swing       @relation(fields: [swingId], references: [id])
   phase       SwingPhase
+  cameraAngle CameraAngle @default(FACE_ON)
   timestampMs Int
   imageKey    String
   confidence  Float?
-  createdAt   DateTime   @default(now())
+  createdAt   DateTime    @default(now())
 
-  @@unique([swingId, phase])
+  @@unique([swingId, phase, cameraAngle])
 }
 
 model ProReferenceFrame {
-  id         String     @id @default(cuid())
-  proId      String
-  pro        Pro        @relation(fields: [proId], references: [id])
-  clubType   ClubType   @default(IRON)
-  phase      SwingPhase
-  imageKey   String
-  sourceNote String?
-  createdAt  DateTime   @default(now())
+  id          String      @id @default(cuid())
+  proId       String
+  pro         Pro         @relation(fields: [proId], references: [id])
+  clubType    ClubType    @default(IRON)
+  phase       SwingPhase
+  cameraAngle CameraAngle @default(FACE_ON)
+  imageKey    String
+  sourceNote  String?
+  createdAt   DateTime    @default(now())
 
-  @@unique([proId, clubType, phase])
+  @@unique([proId, clubType, phase, cameraAngle])
 }
 
 model Analysis {

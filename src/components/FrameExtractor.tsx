@@ -3,11 +3,12 @@
 import { useEffect, useRef } from "react";
 import type { CheckpointResult } from "@/lib/poseDetection/types";
 import { SWING_PHASES } from "@/lib/constants";
-import type { SwingPhase } from "@/lib/constants";
+import type { SwingPhase, CameraAngle } from "@/lib/constants";
 
 interface Props {
   videoBlob: Blob;
   swingId: string;
+  cameraAngle: CameraAngle;
   onProgress: (pct: number, label: string) => void;
   onComplete: () => void;
   onError: (msg: string) => void;
@@ -16,6 +17,7 @@ interface Props {
 export default function FrameExtractor({
   videoBlob,
   swingId,
+  cameraAngle,
   onProgress,
   onComplete,
   onError,
@@ -28,7 +30,7 @@ export default function FrameExtractor({
 
     (async () => {
       try {
-        onProgress(0, "Loading pose detector…");
+        onProgress(0, "Pose detector laden…");
 
         let checkpoints: CheckpointResult[];
         try {
@@ -37,7 +39,7 @@ export default function FrameExtractor({
           );
           checkpoints = await Promise.race([
             detectCheckpoints(videoBlob, (pct) =>
-              onProgress(pct * 0.8, "Detecting swing phases…")
+              onProgress(pct * 0.8, "Swingfases detecteren…")
             ),
             new Promise<never>((_, rej) =>
               setTimeout(() => rej(new Error("Pose detection timed out")), 60000)
@@ -45,7 +47,7 @@ export default function FrameExtractor({
           ]);
         } catch {
           // Fallback: evenly divide video into 6 phase timestamps
-          onProgress(30, "Using even split (pose detection unavailable)…");
+          onProgress(30, "Even verdelen (pose detectie niet beschikbaar)…");
           const tmpUrl = URL.createObjectURL(videoBlob);
           const tmpVid = document.createElement("video");
           tmpVid.src = tmpUrl;
@@ -60,10 +62,10 @@ export default function FrameExtractor({
           }));
         }
 
-        onProgress(80, "Extracting frames…");
+        onProgress(80, "Frames extraheren…");
 
-        // Get presigned upload URLs
-        const urlRes = await fetch(`/api/swings/${swingId}/frames`);
+        // Get presigned upload URLs for this angle
+        const urlRes = await fetch(`/api/swings/${swingId}/frames?cameraAngle=${cameraAngle}`);
         const { uploadUrls } = await urlRes.json() as { uploadUrls: Record<SwingPhase, string> };
 
         // For each checkpoint, seek video, capture frame, upload
@@ -84,7 +86,7 @@ export default function FrameExtractor({
 
         const canvas = document.createElement("canvas");
         const ctx = canvas.getContext("2d")!;
-        // Preserve actual video aspect ratio — don't force 16:9
+        // Preserve actual video aspect ratio
         const MAX_DIM = 1280;
         const vw = video.videoWidth || 640;
         const vh = video.videoHeight || 360;
@@ -98,7 +100,6 @@ export default function FrameExtractor({
           await new Promise<void>((res) => {
             const handler = () => { video.removeEventListener("seeked", handler); res(); };
             video.addEventListener("seeked", handler);
-            // Fallback if seeked never fires (iOS quirk)
             setTimeout(res, 2000);
           });
 
@@ -113,30 +114,31 @@ export default function FrameExtractor({
             headers: { "Content-Type": "image/jpeg" },
           });
 
-          onProgress(80 + ((i + 1) / checkpoints.length) * 15, `Uploaded ${cp.phase}`);
+          onProgress(80 + ((i + 1) / checkpoints.length) * 15, `Geüpload: ${cp.phase}`);
         }
 
         document.body.removeChild(video);
         URL.revokeObjectURL(videoUrl);
 
-        // Save metadata to DB
-        onProgress(96, "Saving…");
+        // Save metadata to DB — include cameraAngle per frame
+        onProgress(96, "Opslaan…");
         await fetch(`/api/swings/${swingId}/frames`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(
             checkpoints.map((c) => ({
               phase: c.phase,
+              cameraAngle,
               timestampMs: c.timestampMs,
               confidence: c.confidence,
             }))
           ),
         });
 
-        onProgress(100, "Done");
+        onProgress(100, "Klaar");
         onComplete();
       } catch (err) {
-        onError(err instanceof Error ? err.message : "Frame extraction failed");
+        onError(err instanceof Error ? err.message : "Frame extractie mislukt");
       }
     })();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps

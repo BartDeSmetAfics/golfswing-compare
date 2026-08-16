@@ -14,7 +14,7 @@ export async function POST(
     if (!session?.user?.id) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
     const { swingId } = await params;
-    const { proId } = await request.json();
+    const { proId, cameraAngle = "FACE_ON" } = await request.json();
 
     const swing = await prisma.swing.findFirst({
       where: { id: swingId, userId: session.user.id },
@@ -26,12 +26,12 @@ export async function POST(
     if (!pro) return Response.json({ error: "Pro not found" }, { status: 404 });
 
     const refFrames = await prisma.proReferenceFrame.findMany({
-      where: { proId, clubType: swing.clubType },
+      where: { proId, clubType: swing.clubType, cameraAngle },
     });
 
     if (refFrames.length < 6) {
       return Response.json(
-        { error: "Not all reference frames are available for this pro" },
+        { error: "Not all reference frames are available for this pro and angle" },
         { status: 400 }
       );
     }
@@ -47,7 +47,7 @@ export async function POST(
 
     const framePairs = await Promise.all(
       phaseOrder.map(async (phase) => {
-        const userFrame = swing.frames.find((f) => f.phase === phase);
+        const userFrame = swing.frames.find((f) => f.phase === phase && f.cameraAngle === cameraAngle);
         const proFrame = refFrames.find((f) => f.phase === phase);
         if (!userFrame || !proFrame) throw new Error(`Missing frame for phase ${phase}`);
 

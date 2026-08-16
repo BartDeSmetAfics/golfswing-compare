@@ -2,16 +2,17 @@
 
 import { useState } from "react";
 import { SWING_PHASE_LABELS } from "@/lib/constants";
-import type { SwingPhase } from "@/lib/constants";
+import type { SwingPhase, CameraAngle } from "@/lib/constants";
 import type { AnalysisResult, CheckpointFeedback } from "@/lib/claude";
 
 interface Props {
   swingId: string;
   proId: string;
+  cameraAngle?: CameraAngle;
   existingAnalysis?: AnalysisResult | null;
 }
 
-export default function CoachingFeedback({ swingId, proId, existingAnalysis }: Props) {
+export default function CoachingFeedback({ swingId, proId, cameraAngle = "FACE_ON", existingAnalysis }: Props) {
   const [analysis, setAnalysis] = useState<AnalysisResult | null>(
     existingAnalysis ?? null
   );
@@ -25,7 +26,7 @@ export default function CoachingFeedback({ swingId, proId, existingAnalysis }: P
       const res = await fetch(`/api/swings/${swingId}/analyze`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ proId }),
+        body: JSON.stringify({ proId, cameraAngle }),
       });
       const text = await res.text();
       if (!res.ok) {

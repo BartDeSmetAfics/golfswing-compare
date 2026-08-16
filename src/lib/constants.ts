@@ -20,3 +20,11 @@ export const SWING_PHASE_LABELS: Record<SwingPhase, string> = {
 
 export const CLUB_TYPES = ["IRON", "DRIVER", "CHIP", "PUTT"] as const;
 export type ClubType = (typeof CLUB_TYPES)[number];
+
+export const CAMERA_ANGLES = ["FACE_ON", "DOWN_THE_LINE"] as const;
+export type CameraAngle = (typeof CAMERA_ANGLES)[number];
+
+export const CAMERA_ANGLE_LABELS: Record<CameraAngle, string> = {
+  FACE_ON: "Tegenover (face-on)",
+  DOWN_THE_LINE: "Van achter (down-the-line)",
+};
