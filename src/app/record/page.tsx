@@ -37,7 +37,7 @@ function RecordPageInner() {
       let id = swingId;
 
       if (!id) {
-        // Create a new swing record
+        // Create swing record + get presigned R2 upload URL in one call
         const res = await fetch("/api/swings", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -47,20 +47,19 @@ function RecordPageInner() {
           const body = await res.json().catch(() => ({}));
           throw new Error(`Server error ${res.status}: ${body.error ?? "unknown"}`);
         }
-        const data = await res.json() as { swingId: string };
+        const data = await res.json() as { swingId: string; videoUploadUrl: string };
         id = data.swingId;
         setSwingId(id);
-      }
 
-      // Upload video
-      const uploadRes = await fetch(`/api/swings/${id}/video`, {
-        method: "PUT",
-        body: blob,
-        headers: { "Content-Type": mimeType },
-      });
-      if (!uploadRes.ok) {
-        const body = await uploadRes.json().catch(() => ({}));
-        throw new Error(`Upload mislukt ${uploadRes.status}: ${body.error ?? "unknown"}`);
+        // Upload video DIRECTLY to R2 — bypasses Next.js body size limits and Railway timeouts
+        const uploadRes = await fetch(data.videoUploadUrl, {
+          method: "PUT",
+          body: blob,
+          headers: { "Content-Type": mimeType },
+        });
+        if (!uploadRes.ok) {
+          throw new Error(`Video upload mislukt (${uploadRes.status})`);
+        }
       }
 
       setVideoBlob(blob);

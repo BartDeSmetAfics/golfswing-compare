@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { swingVideoKey } from "@/lib/storage";
+import { swingVideoKey, getUploadUrl } from "@/lib/storage";
 
 export async function GET() {
   const session = await auth();
@@ -38,7 +38,10 @@ export async function POST(request: NextRequest) {
     const key = swingVideoKey(session.user.id, swing.id, ext);
     await prisma.swing.update({ where: { id: swing.id }, data: { videoKey: key } });
 
-    return Response.json({ swingId: swing.id }, { status: 201 });
+    // Return a presigned URL so the client uploads directly to R2 (avoids server body limits)
+    const videoUploadUrl = await getUploadUrl(key, videoMimeType);
+
+    return Response.json({ swingId: swing.id, videoUploadUrl }, { status: 201 });
   } catch (err) {
     console.error("[POST /api/swings]", err);
     return Response.json({ error: err instanceof Error ? err.message : "Internal error" }, { status: 500 });
