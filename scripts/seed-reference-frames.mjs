@@ -34,9 +34,17 @@ const BRYSON_FACE_ON_PHASES = [
   { phase: "FOLLOW_THROUGH",       seekTo: 45,   note: "QyIG8LPBq_w @ ~45s" },
 ];
 
-// DOWN_THE_LINE: TODO — find a good DTL slow-motion video for Bryson and update timestamps
-// const BRYSON_DTL_VIDEO = "https://www.youtube.com/watch?v=TODO";
-// const BRYSON_DTL_PHASES = [ ... ];
+// DOWN_THE_LINE: t6nkO7Vf5EI (Shorts → watch URL, 360×640)
+// Sequence at 1s (address) → 2s (takeaway) → 3s (top) → 4s (follow)
+const BRYSON_DTL_VIDEO = "https://www.youtube.com/watch?v=t6nkO7Vf5EI";
+const BRYSON_DTL_PHASES = [
+  { phase: "ADDRESS",              seekTo: 1,    note: "t6nkO7Vf5EI @ ~1s"   },
+  { phase: "TAKEAWAY",             seekTo: 2,    note: "t6nkO7Vf5EI @ ~2s"   },
+  { phase: "TOP_OF_BACKSWING",     seekTo: 3,    note: "t6nkO7Vf5EI @ ~3s"   },
+  { phase: "DOWNSWING_TRANSITION", seekTo: 3.2,  note: "t6nkO7Vf5EI @ ~3.2s" },
+  { phase: "IMPACT",               seekTo: 3.6,  note: "t6nkO7Vf5EI @ ~3.6s" },
+  { phase: "FOLLOW_THROUGH",       seekTo: 4,    note: "t6nkO7Vf5EI @ ~4s"   },
+];
 
 // ─── Grant Horvat ─────────────────────────────────────────────────────────────
 const GRANT_SLUG = "grant-horvat";
@@ -52,9 +60,17 @@ const GRANT_FACE_ON_PHASES = [
   { phase: "FOLLOW_THROUGH",       seekTo: 6.3,  note: "D3fcCpKHQEM @ ~6.3s" },
 ];
 
-// DOWN_THE_LINE: TODO — find a good DTL slow-motion video for Grant and update timestamps
-// const GRANT_DTL_VIDEO = "https://www.youtube.com/watch?v=TODO";
-// const GRANT_DTL_PHASES = [ ... ];
+// DOWN_THE_LINE: KropxSzWGOo (Shorts → watch URL, 360×640)
+// First swing: 0.5s (takeaway) → 1s (top) → 1.5s (follow); freeze-frame address at 14s
+const GRANT_DTL_VIDEO = "https://www.youtube.com/watch?v=KropxSzWGOo";
+const GRANT_DTL_PHASES = [
+  { phase: "ADDRESS",              seekTo: 14,   note: "KropxSzWGOo @ ~14s"  },
+  { phase: "TAKEAWAY",             seekTo: 0.5,  note: "KropxSzWGOo @ ~0.5s" },
+  { phase: "TOP_OF_BACKSWING",     seekTo: 1,    note: "KropxSzWGOo @ ~1s"   },
+  { phase: "DOWNSWING_TRANSITION", seekTo: 1.2,  note: "KropxSzWGOo @ ~1.2s" },
+  { phase: "IMPACT",               seekTo: 1.3,  note: "KropxSzWGOo @ ~1.3s" },
+  { phase: "FOLLOW_THROUGH",       seekTo: 1.5,  note: "KropxSzWGOo @ ~1.5s" },
+];
 
 async function captureFrame(page, seekTo) {
   return page.evaluate(async (t) => {
@@ -113,12 +129,12 @@ async function uploadFrame(proSlug, phase, cameraAngle, jpegBuffer, sourceNote) 
   return JSON.parse(text);
 }
 
-async function seedPro(browser, proSlug, videoUrl, phases, cameraAngle = "FACE_ON") {
+async function seedPro(browser, proSlug, videoUrl, phases, cameraAngle = "FACE_ON", viewport = { width: 1280, height: 720 }) {
   const page = await browser.newPage();
   await page.setUserAgent(
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36"
   );
-  await page.setViewport({ width: 1280, height: 720 });
+  await page.setViewport(viewport);
 
   console.log(`\n📺  Loading ${videoUrl}`);
   await page.goto(videoUrl, { waitUntil: "domcontentloaded", timeout: 60000 });
@@ -161,19 +177,23 @@ async function main() {
   const target = process.env.SEED_PRO ?? "all";
 
   try {
+    const dtlViewport = { width: 720, height: 1280 }; // portrait for Shorts
+
     if (target === "all" || target === "bryson") {
-      await seedPro(browser, BRYSON_SLUG, BRYSON_FACE_ON_VIDEO, BRYSON_FACE_ON_PHASES, "FACE_ON");
-      console.log("\n🏆  Bryson FACE_ON frames seeded!");
-      // Uncomment when DTL video + timestamps are ready:
-      // await seedPro(browser, BRYSON_SLUG, BRYSON_DTL_VIDEO, BRYSON_DTL_PHASES, "DOWN_THE_LINE");
-      // console.log("🏆  Bryson DOWN_THE_LINE frames seeded!");
+      if (!process.env.SKIP_FACE_ON) {
+        await seedPro(browser, BRYSON_SLUG, BRYSON_FACE_ON_VIDEO, BRYSON_FACE_ON_PHASES, "FACE_ON");
+        console.log("\n🏆  Bryson FACE_ON frames seeded!");
+      }
+      await seedPro(browser, BRYSON_SLUG, BRYSON_DTL_VIDEO, BRYSON_DTL_PHASES, "DOWN_THE_LINE", dtlViewport);
+      console.log("🏆  Bryson DOWN_THE_LINE frames seeded!");
     }
     if (target === "all" || target === "grant") {
-      await seedPro(browser, GRANT_SLUG, GRANT_FACE_ON_VIDEO, GRANT_FACE_ON_PHASES, "FACE_ON");
-      console.log("\n🏆  Grant Horvat FACE_ON frames seeded!");
-      // Uncomment when DTL video + timestamps are ready:
-      // await seedPro(browser, GRANT_SLUG, GRANT_DTL_VIDEO, GRANT_DTL_PHASES, "DOWN_THE_LINE");
-      // console.log("🏆  Grant Horvat DOWN_THE_LINE frames seeded!");
+      if (!process.env.SKIP_FACE_ON) {
+        await seedPro(browser, GRANT_SLUG, GRANT_FACE_ON_VIDEO, GRANT_FACE_ON_PHASES, "FACE_ON");
+        console.log("\n🏆  Grant Horvat FACE_ON frames seeded!");
+      }
+      await seedPro(browser, GRANT_SLUG, GRANT_DTL_VIDEO, GRANT_DTL_PHASES, "DOWN_THE_LINE", dtlViewport);
+      console.log("🏆  Grant Horvat DOWN_THE_LINE frames seeded!");
     }
   } finally {
     await browser.close();

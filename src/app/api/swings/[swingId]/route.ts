@@ -1,6 +1,6 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { getDownloadUrl } from "@/lib/storage";
+import { getDownloadUrl, deleteObjects } from "@/lib/storage";
 
 export async function GET(
   _req: Request,
@@ -29,4 +29,31 @@ export async function GET(
   );
 
   return Response.json({ ...swing, frames: framesWithUrls });
+}
+
+export async function DELETE(
+  _req: Request,
+  { params }: { params: Promise<{ swingId: string }> }
+) {
+  const session = await auth();
+  if (!session?.user?.id) return Response.json({ error: "Unauthorized" }, { status: 401 });
+
+  const { swingId } = await params;
+
+  const swing = await prisma.swing.findFirst({
+    where: { id: swingId, userId: session.user.id },
+    include: { frames: { select: { imageKey: true } } },
+  });
+
+  if (!swing) return Response.json({ error: "Not found" }, { status: 404 });
+
+  const r2Keys = [swing.videoKey, ...swing.frames.map((f) => f.imageKey)].filter(Boolean);
+  await deleteObjects(r2Keys);
+
+  // Delete child records explicitly before deleting the swing
+  await prisma.analysis.deleteMany({ where: { swingId } });
+  await prisma.swingFrame.deleteMany({ where: { swingId } });
+  await prisma.swing.delete({ where: { id: swingId } });
+
+  return Response.json({ success: true });
 }

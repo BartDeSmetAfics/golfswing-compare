@@ -73,7 +73,7 @@ model Swing {
 model SwingFrame {
   id          String      @id @default(cuid())
   swingId     String
-  swing       Swing       @relation(fields: [swingId], references: [id])
+  swing       Swing       @relation(fields: [swingId], references: [id], onDelete: Cascade)
   phase       SwingPhase
   cameraAngle CameraAngle @default(FACE_ON)
   timestampMs Int
@@ -101,7 +101,7 @@ model ProReferenceFrame {
 model Analysis {
   id             String   @id @default(cuid())
   swingId        String
-  swing          Swing    @relation(fields: [swingId], references: [id])
+  swing          Swing    @relation(fields: [swingId], references: [id], onDelete: Cascade)
   proId          String
   pro            Pro      @relation(fields: [proId], references: [id])
   model          String

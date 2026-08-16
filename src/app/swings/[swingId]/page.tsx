@@ -8,7 +8,8 @@ import SwingPhaseComparison from "@/components/SwingPhaseComparison";
 import CoachingFeedback from "@/components/CoachingFeedback";
 import AppHeader from "@/components/AppHeader";
 import type { SwingPhase, CameraAngle } from "@/lib/constants";
-import { SWING_PHASES, CAMERA_ANGLES, CAMERA_ANGLE_LABELS } from "@/lib/constants";
+import { SWING_PHASES, CAMERA_ANGLES } from "@/lib/constants";
+import type { AnalysisResult } from "@/lib/claude";
 
 interface SwingFrame {
   phase: SwingPhase;
@@ -17,11 +18,18 @@ interface SwingFrame {
   timestampMs: number;
 }
 
+interface SwingAnalysis {
+  proId: string;
+  result: AnalysisResult;
+  createdAt: string;
+}
+
 interface Swing {
   id: string;
   clubType: string;
   status: string;
   frames: SwingFrame[];
+  analyses: SwingAnalysis[];
 }
 
 interface ProReferenceFrame {
@@ -110,6 +118,11 @@ export default function SwingDetailPage() {
   // Which angle is missing for this swing?
   const missingAngle = CAMERA_ANGLES.find((a) => !availableAngles.includes(a));
 
+  // Find the most recent saved analysis for the selected pro (if any)
+  const existingAnalysis = selectedProId
+    ? swing.analyses.find((a) => a.proId === selectedProId)?.result ?? null
+    : null;
+
   return (
     <main className="min-h-screen bg-green-950 text-white p-6 pb-16">
       <div className="max-w-2xl mx-auto flex flex-col gap-6">
@@ -162,7 +175,12 @@ export default function SwingDetailPage() {
             {!proLoading && pairedFrames.length > 0 && (
               <>
                 <SwingPhaseComparison pairs={pairedFrames} />
-                <CoachingFeedback swingId={swingId} proId={selectedProId!} cameraAngle={selectedAngle} />
+                <CoachingFeedback
+                  swingId={swingId}
+                  proId={selectedProId!}
+                  cameraAngle={selectedAngle}
+                  existingAnalysis={existingAnalysis}
+                />
               </>
             )}
 

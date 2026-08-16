@@ -2,6 +2,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import AppHeader from "@/components/AppHeader";
+import SwingList from "@/components/SwingList";
 
 export default async function DashboardPage() {
   const session = await auth();
@@ -11,6 +12,7 @@ export default async function DashboardPage() {
     take: 20,
     select: { id: true, clubType: true, status: true, createdAt: true },
   });
+  const swingsForClient = swings.map((s) => ({ ...s, createdAt: s.createdAt.toISOString() }));
 
   return (
     <main className="min-h-screen bg-green-950 text-white p-6">
@@ -25,48 +27,10 @@ export default async function DashboardPage() {
         </Link>
 
         <h2 className="text-lg font-semibold mb-3 text-green-200" style={{ fontFamily: "var(--font-playfair)" }}>
-          Your swings
+          Jouw slagen
         </h2>
 
-        {swings.length === 0 ? (
-          <p className="text-green-400 text-sm">
-            No swings yet — record your first one above.
-          </p>
-        ) : (
-          <ul className="flex flex-col gap-3">
-            {swings.map((swing) => (
-              <li key={swing.id}>
-                <Link
-                  href={`/swings/${swing.id}`}
-                  className="flex items-center justify-between bg-green-900 hover:bg-green-800 rounded-xl px-5 py-4 transition"
-                >
-                  <span className="font-medium capitalize">
-                    {swing.clubType.toLowerCase()} swing
-                  </span>
-                  <span className="flex items-center gap-3 text-sm text-green-300">
-                    <span
-                      className={
-                        swing.status === "PROCESSED"
-                          ? "text-green-400"
-                          : swing.status === "FAILED"
-                          ? "text-red-400"
-                          : "text-yellow-400"
-                      }
-                    >
-                      {swing.status.toLowerCase()}
-                    </span>
-                    <span>
-                      {new Date(swing.createdAt).toLocaleDateString("nl-BE", {
-                        day: "numeric",
-                        month: "short",
-                      })}
-                    </span>
-                  </span>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        )}
+        <SwingList initialSwings={swingsForClient} />
       </div>
     </main>
   );
