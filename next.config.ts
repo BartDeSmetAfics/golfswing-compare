@@ -4,7 +4,7 @@ import withPWA from "@ducanh2912/next-pwa";
 const nextConfig: NextConfig = {
   turbopack: {},
   experimental: {
-    middlewareClientMaxBodySize: 500 * 1024 * 1024, // 500MB for video uploads
+    proxyClientMaxBodySize: 500 * 1024 * 1024,
   },
   images: {
     remotePatterns: [
