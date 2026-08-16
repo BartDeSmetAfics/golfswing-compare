@@ -34,29 +34,22 @@ export default function AdminPage() {
     setSuccess("");
 
     try {
+      const formData = new FormData();
+      formData.append("proId", selectedPro);
+      formData.append("clubType", "IRON");
+      formData.append("phase", selectedPhase);
+      formData.append("sourceNote", sourceNote);
+      formData.append("image", file);
+
       const res = await fetch("/api/admin/reference-frames", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          proId: selectedPro,
-          clubType: "IRON",
-          phase: selectedPhase,
-          sourceNote,
-        }),
+        body: formData,
       });
 
       if (!res.ok) {
         const data = await res.json();
         throw new Error(data.error ?? "Upload failed");
       }
-
-      const { uploadUrl } = await res.json() as { uploadUrl: string };
-
-      await fetch(uploadUrl, {
-        method: "PUT",
-        body: file,
-        headers: { "Content-Type": "image/jpeg" },
-      });
 
       setSuccess(`Uploaded ${selectedPhase} for ${pros.find((p) => p.id === selectedPro)?.name}`);
       setFile(null);
@@ -115,7 +108,7 @@ export default function AdminPage() {
             <label className="text-green-200 text-sm block mb-1">Image (JPEG screenshot)</label>
             <input
               type="file"
-              accept="image/jpeg,image/jpg"
+              accept="image/*"
               onChange={(e) => setFile(e.target.files?.[0] ?? null)}
               required
               className="w-full text-sm text-green-300 file:bg-green-700 file:text-white file:rounded-lg file:px-3 file:py-1 file:border-0 file:mr-3"

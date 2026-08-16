@@ -1,12 +1,14 @@
 import { NextRequest } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { getUploadUrl, proReferenceKey } from "@/lib/storage";
+import { uploadBuffer, proReferenceKey } from "@/lib/storage";
 import type { SwingPhase } from "@/lib/constants";
 
 function isAdmin(email: string) {
-  const adminEmails = (process.env.ADMIN_EMAILS ?? "").split(",").map((e) => e.trim());
-  return adminEmails.includes(email);
+  const adminEmails = (process.env.ADMIN_EMAILS ?? "")
+    .split(",")
+    .map((e) => e.trim().toLowerCase());
+  return adminEmails.includes(email.toLowerCase());
 }
 
 export async function POST(request: NextRequest) {
@@ -15,22 +17,34 @@ export async function POST(request: NextRequest) {
     return Response.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const { proId, clubType, phase, sourceNote } = await request.json();
-  if (!proId || !clubType || !phase) {
-    return Response.json({ error: "proId, clubType and phase required" }, { status: 400 });
+  const formData = await request.formData();
+  const proId = formData.get("proId") as string;
+  const clubType = formData.get("clubType") as string;
+  const phase = formData.get("phase") as string;
+  const sourceNote = (formData.get("sourceNote") as string) ?? "";
+  const image = formData.get("image") as File | null;
+
+  if (!proId || !clubType || !phase || !image) {
+    return Response.json({ error: "proId, clubType, phase and image required" }, { status: 400 });
   }
 
   const pro = await prisma.pro.findUnique({ where: { id: proId } });
   if (!pro) return Response.json({ error: "Pro not found" }, { status: 404 });
 
-  const key = proReferenceKey(pro.slug, clubType, phase as SwingPhase);
-  const uploadUrl = await getUploadUrl(key, "image/jpeg");
+  try {
+    const key = proReferenceKey(pro.slug, clubType, phase as SwingPhase);
+    const buffer = Buffer.from(await image.arrayBuffer());
+    await uploadBuffer(key, buffer, image.type || "image/jpeg");
 
-  await prisma.proReferenceFrame.upsert({
-    where: { proId_clubType_phase: { proId, clubType, phase } },
-    update: { imageKey: key, sourceNote },
-    create: { proId, clubType, phase, imageKey: key, sourceNote },
-  });
+    await prisma.proReferenceFrame.upsert({
+      where: { proId_clubType_phase: { proId, clubType, phase } },
+      update: { imageKey: key, sourceNote },
+      create: { proId, clubType, phase, imageKey: key, sourceNote },
+    });
 
-  return Response.json({ uploadUrl, key }, { status: 201 });
+    return Response.json({ ok: true, key }, { status: 201 });
+  } catch (err) {
+    console.error("[POST /api/admin/reference-frames]", err);
+    return Response.json({ error: err instanceof Error ? err.message : "Upload failed" }, { status: 500 });
+  }
 }
