@@ -33,6 +33,7 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.3.1",
+    "puppeteer": "^25.7.0",
     "tailwindcss": "^4",
     "tsx": "^4.23.12",
     "typescript": "^5"
@@ -45,6 +46,7 @@
     "@prisma/engines@7.9.1": true,
     "unrs-resolver@1.12.2": true,
     "fsevents@2.3.3": true,
-    "esbuild@0.28.2": true
+    "esbuild@0.28.2": true,
+    "puppeteer@25.7.0": true
   }
 }

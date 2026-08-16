@@ -4,6 +4,14 @@ import { prisma } from "@/lib/prisma";
 import { uploadBuffer, proReferenceKey } from "@/lib/storage";
 import type { SwingPhase } from "@/lib/constants";
 
+export async function GET(request: NextRequest) {
+  if (!checkAdminKey(request)) {
+    return Response.json({ error: "Forbidden" }, { status: 403 });
+  }
+  const pros = await prisma.pro.findMany({ select: { id: true, name: true, slug: true } });
+  return Response.json(pros);
+}
+
 function isAdmin(email: string) {
   const adminEmails = (process.env.ADMIN_EMAILS ?? "")
     .split(",")
@@ -11,10 +19,19 @@ function isAdmin(email: string) {
   return adminEmails.includes(email.toLowerCase());
 }
 
+function checkAdminKey(request: NextRequest): boolean {
+  const secret = process.env.ADMIN_SECRET;
+  if (!secret) return false;
+  return request.headers.get("x-admin-key") === secret;
+}
+
 export async function POST(request: NextRequest) {
-  const session = await auth();
-  if (!session?.user?.email || !isAdmin(session.user.email)) {
-    return Response.json({ error: "Forbidden" }, { status: 403 });
+  const hasAdminKey = checkAdminKey(request);
+  if (!hasAdminKey) {
+    const session = await auth();
+    if (!session?.user?.email || !isAdmin(session.user.email)) {
+      return Response.json({ error: "Forbidden" }, { status: 403 });
+    }
   }
 
   const formData = await request.formData();
