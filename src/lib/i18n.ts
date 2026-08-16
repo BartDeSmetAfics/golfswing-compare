@@ -51,6 +51,12 @@ const translations = {
     tipAngles: "Film van achter en tegenover voor de meest nuttige analyse.",
     tipAddress: "Een stabiele adrespositie is het fundament van elke geweldige swing.",
 
+    // Avatar cropper
+    cropTitle: "Profielfoto bijsnijden",
+    cropDrag: "Sleep om bij te snijden",
+    cropZoom: "Zoom",
+    cropConfirm: "Opslaan",
+
     // Settings
     settings: "Instellingen",
     changeEmail: "E-mailadres wijzigen",
@@ -163,6 +169,11 @@ const translations = {
     tipAngles: "Film from down-the-line and face-on angles for the most useful analysis.",
     tipAddress: "A stable address position is the foundation of every great swing.",
 
+    cropTitle: "Crop profile photo",
+    cropDrag: "Drag to crop",
+    cropZoom: "Zoom",
+    cropConfirm: "Save",
+
     settings: "Settings",
     changeEmail: "Change email address",
     changePassword: "Change password",
@@ -270,6 +281,11 @@ const translations = {
     tipReview: "Consultez les comparaisons de frames et les conseils pour chaque swing traité.",
     tipAngles: "Filmez de derrière et de face pour l'analyse la plus utile.",
     tipAddress: "Une position d'adresse stable est le fondement de chaque excellent swing.",
+
+    cropTitle: "Recadrer la photo de profil",
+    cropDrag: "Faites glisser pour recadrer",
+    cropZoom: "Zoom",
+    cropConfirm: "Enregistrer",
 
     settings: "Paramètres",
     changeEmail: "Modifier l'adresse e-mail",

@@ -7,12 +7,15 @@ export interface ProTrait {
 export interface ProBio {
   slug: string;
   tagline: string;
+  /** Path relative to /public — e.g. "/pros/bryson-dechambeau.jpg" */
+  avatarPath?: string;
   traits: ProTrait[];
 }
 
 export const PRO_BIOS: Record<string, ProBio> = {
   "bryson-dechambeau": {
     slug: "bryson-dechambeau",
+    avatarPath: "/pros/bryson-dechambeau.jpg",
     tagline: "The Scientist — power golf through physics",
     traits: [
       {
@@ -49,6 +52,7 @@ export const PRO_BIOS: Record<string, ProBio> = {
   },
   "grant-horvat": {
     slug: "grant-horvat",
+    avatarPath: "/pros/grant-horvat.jpg",
     tagline: "Pure tempo and natural athleticism",
     traits: [
       {

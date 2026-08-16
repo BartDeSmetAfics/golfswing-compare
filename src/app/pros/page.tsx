@@ -12,15 +12,37 @@ interface Pro {
   slug: string;
 }
 
-function ProInitials({ name }: { name: string }) {
+function proInitials(name: string) {
   const parts = name.trim().split(" ");
-  const initials =
-    parts.length >= 2
-      ? (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
-      : parts[0].slice(0, 2).toUpperCase();
+  return parts.length >= 2
+    ? (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
+    : parts[0].slice(0, 2).toUpperCase();
+}
+
+function ProAvatar({ name, slug, size = 64 }: { name: string; slug: string; size?: number }) {
+  const bio = getProBio(slug);
+  const [imgError, setImgError] = useState(false);
+
+  if (bio?.avatarPath && !imgError) {
+    return (
+      <img
+        src={bio.avatarPath}
+        alt={name}
+        width={size}
+        height={size}
+        onError={() => setImgError(true)}
+        className="rounded-full object-cover shrink-0 ring-2 ring-green-700"
+        style={{ width: size, height: size }}
+      />
+    );
+  }
+
   return (
-    <div className="w-16 h-16 rounded-full bg-gradient-to-br from-green-600 to-green-800 flex items-center justify-center text-xl font-bold text-white ring-2 ring-green-700 shrink-0">
-      {initials}
+    <div
+      className="rounded-full bg-gradient-to-br from-green-600 to-green-800 flex items-center justify-center font-bold text-white ring-2 ring-green-700 shrink-0"
+      style={{ width: size, height: size, fontSize: size * 0.32 }}
+    >
+      {proInitials(name)}
     </div>
   );
 }
@@ -57,7 +79,7 @@ export default function ProsPage() {
                     href={`/pros/${pro.slug}`}
                     className="flex items-center gap-4 bg-green-900/60 hover:bg-green-800/70 rounded-2xl p-4 transition group"
                   >
-                    <ProInitials name={pro.name} />
+                    <ProAvatar name={pro.name} slug={pro.slug} size={64} />
                     <div className="flex-1 min-w-0">
                       <p className="font-semibold text-base" style={{ fontFamily: "var(--font-playfair)" }}>
                         {pro.name}
@@ -65,9 +87,9 @@ export default function ProsPage() {
                       {bio && (
                         <p className="text-green-400 text-sm mt-0.5 truncate">{bio.tagline}</p>
                       )}
-                      <p className="text-green-500 text-xs mt-1">
-                        {bio ? `${bio.traits.length} kenmerken` : "Referentieframes beschikbaar"}
-                      </p>
+                      {bio && (
+                        <p className="text-green-600 text-xs mt-1">{bio.traits.length} kenmerken</p>
+                      )}
                     </div>
                     <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 text-green-600 group-hover:text-green-400 transition shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />

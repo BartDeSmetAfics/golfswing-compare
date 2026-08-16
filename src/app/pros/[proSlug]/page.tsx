@@ -8,6 +8,41 @@ import { getProBio } from "@/lib/pro-traits";
 import { SWING_PHASE_LABELS } from "@/lib/constants";
 import type { SwingPhase } from "@/lib/constants";
 
+function proInitials(name: string) {
+  const parts = name.trim().split(" ");
+  return parts.length >= 2
+    ? (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
+    : parts[0].slice(0, 2).toUpperCase();
+}
+
+function ProAvatar({ name, slug, size = 64 }: { name: string; slug: string; size?: number }) {
+  const bio = getProBio(slug);
+  const [imgError, setImgError] = useState(false);
+
+  if (bio?.avatarPath && !imgError) {
+    return (
+      <img
+        src={bio.avatarPath}
+        alt={name}
+        width={size}
+        height={size}
+        onError={() => setImgError(true)}
+        className="rounded-full object-cover shrink-0 ring-4 ring-green-700"
+        style={{ width: size, height: size }}
+      />
+    );
+  }
+
+  return (
+    <div
+      className="rounded-full bg-gradient-to-br from-green-600 to-green-800 flex items-center justify-center font-bold text-white ring-4 ring-green-700 shrink-0"
+      style={{ width: size, height: size, fontSize: size * 0.32 }}
+    >
+      {proInitials(name)}
+    </div>
+  );
+}
+
 interface Pro {
   id: string;
   name: string;
@@ -84,9 +119,7 @@ export default function ProDetailPage() {
 
         {/* Hero */}
         <div className="flex items-center gap-4 bg-green-900/60 rounded-2xl p-5">
-          <div className="w-20 h-20 rounded-full bg-gradient-to-br from-green-600 to-green-800 flex items-center justify-center text-2xl font-bold ring-4 ring-green-700 shrink-0">
-            {initials}
-          </div>
+          <ProAvatar name={pro.name} slug={pro.slug} size={80} />
           <div>
             <h1 className="text-2xl font-bold" style={{ fontFamily: "var(--font-playfair)" }}>
               {pro.name}
