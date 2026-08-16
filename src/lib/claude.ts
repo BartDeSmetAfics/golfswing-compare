@@ -23,7 +23,7 @@ interface FramePair {
   proImageUrl: string;
 }
 
-const SYSTEM_PROMPT = `You are an expert golf coach. Analyze golf swing images and return ONLY valid JSON — no markdown, no explanation, just the JSON object. Always use exactly this structure:
+const SYSTEM_PROMPT = `Je bent een ervaren golfcoach. Analyseer golfswingbeelden en geef je feedback UITSLUITEND in het Nederlands. Geef ALLEEN geldige JSON terug — geen markdown, geen uitleg, alleen het JSON-object. Gebruik altijd exact deze structuur:
 {
   "overall_summary": "string",
   "checkpoints": [
@@ -44,7 +44,7 @@ export async function analyzeSwing(
   const messageContent: Anthropic.MessageParam["content"] = [
     {
       type: "text",
-      text: `Compare this player's iron swing against ${proName}'s iron swing, phase by phase. Give honest, actionable feedback in plain language. Be specific about what differs and what to improve.`,
+      text: `Vergelijk de ijzerswing van deze speler fase voor fase met die van ${proName}. Geef eerlijke, bruikbare feedback in het Nederlands. Wees specifiek over wat er verschilt en wat de speler kan verbeteren.`,
     },
   ];
 
@@ -64,7 +64,7 @@ export async function analyzeSwing(
 
   messageContent.push({
     type: "text",
-    text: `Return your full analysis as a single JSON object. Include one checkpoint entry per phase shown. top_priorities should list 2-3 most important things to improve.`,
+    text: `Geef je volledige analyse terug als één JSON-object. Voeg voor elke getoonde fase één checkpoint in. top_priorities bevat 2-3 belangrijkste verbeterpunten, in het Nederlands.`,
   });
 
   const response = await client.messages.create({

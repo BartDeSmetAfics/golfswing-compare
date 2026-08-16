@@ -127,13 +127,17 @@ function findPhases(
   const n = samples.length;
   const checkpoints: CheckpointResult[] = [];
 
-  // Address: first window with low variance (golfer is set up, not moving yet)
+  // Address: first window with low variance AND hands in lower half of frame (Y > 0.45).
+  // The Y > 0.45 guard prevents follow-through positions (hands high = low Y) from being
+  // mistakenly selected when the user starts recording mid-swing or after a previous swing.
   const STABLE_WINDOW = Math.max(5, Math.floor(n * 0.08));
   let addressIdx = 0;
   let minVar = Infinity;
-  for (let i = 0; i < Math.floor(n * 0.4); i++) {
+  for (let i = 0; i < Math.floor(n * 0.5); i++) {
     const window = handsY.slice(i, i + STABLE_WINDOW);
     if (window.length < STABLE_WINDOW) break;
+    const windowMeanY = window.reduce((a, b) => a + b, 0) / window.length;
+    if (windowMeanY < 0.45) continue; // skip — hands too high (follow-through/backswing)
     const v = stdDev(window);
     if (v < minVar) { minVar = v; addressIdx = i + Math.floor(STABLE_WINDOW / 2); }
   }

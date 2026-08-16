@@ -25,12 +25,12 @@ if (!ADMIN_SECRET) {
 const BRYSON_VIDEO = "https://www.youtube.com/watch?v=QyIG8LPBq_w";
 const BRYSON_SLUG = "bryson-dechambeau";
 const BRYSON_PHASES = [
-  { phase: "ADDRESS",              seekTo: 10,   note: "QyIG8LPBq_w @ ~10s" },
-  { phase: "TAKEAWAY",             seekTo: 13,   note: "QyIG8LPBq_w @ ~13s" },
-  { phase: "TOP_OF_BACKSWING",     seekTo: 19,   note: "QyIG8LPBq_w @ ~19s" },
-  { phase: "DOWNSWING_TRANSITION", seekTo: 24,   note: "QyIG8LPBq_w @ ~24s" },
-  { phase: "IMPACT",               seekTo: 31,   note: "QyIG8LPBq_w @ ~31s" },
-  { phase: "FOLLOW_THROUGH",       seekTo: 41,   note: "QyIG8LPBq_w @ ~41s" },
+  { phase: "ADDRESS",              seekTo: 5,    note: "QyIG8LPBq_w @ ~5s"  },
+  { phase: "TAKEAWAY",             seekTo: 10,   note: "QyIG8LPBq_w @ ~10s" },
+  { phase: "TOP_OF_BACKSWING",     seekTo: 22,   note: "QyIG8LPBq_w @ ~22s" },
+  { phase: "DOWNSWING_TRANSITION", seekTo: 27,   note: "QyIG8LPBq_w @ ~27s" },
+  { phase: "IMPACT",               seekTo: 38,   note: "QyIG8LPBq_w @ ~38s" },
+  { phase: "FOLLOW_THROUGH",       seekTo: 45,   note: "QyIG8LPBq_w @ ~45s" },
 ];
 
 // Grant Horvat — D3fcCpKHQEM: "Grant Horvat Slow Motion Golf Iron Swing!"
@@ -147,12 +147,17 @@ async function main() {
     ],
   });
 
-  try {
-    await seedPro(browser, BRYSON_SLUG, BRYSON_VIDEO, BRYSON_PHASES);
-    console.log("\n🏆  All Bryson iron frames seeded successfully!");
+  const target = process.env.SEED_PRO ?? "all";
 
-    await seedPro(browser, GRANT_SLUG, GRANT_VIDEO, GRANT_PHASES);
-    console.log("\n🏆  All Grant Horvat iron frames seeded successfully!");
+  try {
+    if (target === "all" || target === "bryson") {
+      await seedPro(browser, BRYSON_SLUG, BRYSON_VIDEO, BRYSON_PHASES);
+      console.log("\n🏆  All Bryson iron frames seeded successfully!");
+    }
+    if (target === "all" || target === "grant") {
+      await seedPro(browser, GRANT_SLUG, GRANT_VIDEO, GRANT_PHASES);
+      console.log("\n🏆  All Grant Horvat iron frames seeded successfully!");
+    }
   } finally {
     await browser.close();
   }

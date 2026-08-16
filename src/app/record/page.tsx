@@ -119,9 +119,12 @@ export default function RecordPage() {
         {/* Record mode */}
         {mode === "record" && !videoBlob && !uploading && (
           <>
-            <p className="text-green-300 text-sm">
-              Stand so your full body is visible. Record your complete iron swing in one take.
-            </p>
+            <div className="bg-green-900/50 rounded-xl p-4 flex flex-col gap-1 text-sm text-green-200">
+              <p className="font-semibold text-green-100">Tips voor een goede opname:</p>
+              <p>• Zorg dat je volledige lichaam zichtbaar is</p>
+              <p>• Start de opname, neem <strong>eerst je adresstelling in</strong>, dan sla je</p>
+              <p>• Sla niet voor je op record drukt — begin altijd vanuit rust</p>
+            </div>
             <CameraRecorder onRecordingComplete={handleRecordingComplete} />
           </>
         )}
@@ -129,9 +132,11 @@ export default function RecordPage() {
         {/* Upload mode */}
         {mode === "upload" && !videoBlob && !uploading && (
           <>
-            <p className="text-green-300 text-sm">
-              Choose a video of your iron swing from your photo library.
-            </p>
+            <div className="bg-green-900/50 rounded-xl p-4 flex flex-col gap-1 text-sm text-green-200">
+              <p className="font-semibold text-green-100">Tips voor een goede video:</p>
+              <p>• De video moet beginnen vanuit de <strong>adresstelling</strong>, vóór de swing</p>
+              <p>• Zorg dat je volledige lichaam zichtbaar is</p>
+            </div>
             <input
               ref={fileInputRef}
               type="file"
