@@ -9,7 +9,9 @@ const LEFT_WRIST = 15;
 const RIGHT_WRIST = 16;
 const LEFT_SHOULDER = 11;
 const RIGHT_SHOULDER = 12;
-const MIN_VISIBILITY = 0.5;
+// DTL uses a lower threshold: one wrist is often behind the body
+const MIN_VISIBILITY_FACE_ON = 0.5;
+const MIN_VISIBILITY_DTL = 0.3;
 const SAMPLE_INTERVAL_MS = 40;
 const SMOOTH_WINDOW = 5;
 
@@ -33,8 +35,10 @@ function stdDev(arr: number[]): number {
 
 export async function detectCheckpoints(
   videoBlob: Blob,
-  onProgress?: (pct: number) => void
+  onProgress?: (pct: number) => void,
+  cameraAngle: "FACE_ON" | "DOWN_THE_LINE" = "FACE_ON"
 ): Promise<CheckpointResult[]> {
+  const MIN_VISIBILITY = cameraAngle === "DOWN_THE_LINE" ? MIN_VISIBILITY_DTL : MIN_VISIBILITY_FACE_ON;
   const { PoseLandmarker, FilesetResolver } =
     await import("@mediapipe/tasks-vision");
 
@@ -85,10 +89,8 @@ export async function detectCheckpoints(
       const ls = lm[LEFT_SHOULDER];
       const rs = lm[RIGHT_SHOULDER];
 
-      const vis = Math.min(
-        lw.visibility ?? 0,
-        rw.visibility ?? 0
-      );
+      // Average instead of min: from DTL one wrist is often partially occluded
+      const vis = ((lw.visibility ?? 0) + (rw.visibility ?? 0)) / 2;
 
       if (vis >= MIN_VISIBILITY) {
         samples.push({

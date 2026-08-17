@@ -38,8 +38,10 @@ export default function FrameExtractor({
             "@/lib/poseDetection/checkpointDetector"
           );
           checkpoints = await Promise.race([
-            detectCheckpoints(videoBlob, (pct) =>
-              onProgress(pct * 0.8, "Swingfases detecteren…")
+            detectCheckpoints(
+              videoBlob,
+              (pct) => onProgress(pct * 0.8, "Swingfases detecteren…"),
+              cameraAngle
             ),
             new Promise<never>((_, rej) =>
               setTimeout(() => rej(new Error("Pose detection timed out")), 60000)
