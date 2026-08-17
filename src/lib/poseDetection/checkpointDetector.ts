@@ -11,7 +11,7 @@ const LEFT_SHOULDER = 11;
 const RIGHT_SHOULDER = 12;
 // DTL uses a lower threshold: one wrist is often behind the body
 const MIN_VISIBILITY_FACE_ON = 0.5;
-const MIN_VISIBILITY_DTL = 0.3;
+const MIN_VISIBILITY_DTL = 0.2;
 const SAMPLE_INTERVAL_MS = 40;
 const SMOOTH_WINDOW = 5;
 
@@ -89,8 +89,10 @@ export async function detectCheckpoints(
       const ls = lm[LEFT_SHOULDER];
       const rs = lm[RIGHT_SHOULDER];
 
-      // Average instead of min: from DTL one wrist is often partially occluded
-      const vis = ((lw.visibility ?? 0) + (rw.visibility ?? 0)) / 2;
+      // DTL: max (either wrist visible is enough); FACE_ON: average
+      const vis = cameraAngle === "DOWN_THE_LINE"
+        ? Math.max(lw.visibility ?? 0, rw.visibility ?? 0)
+        : ((lw.visibility ?? 0) + (rw.visibility ?? 0)) / 2;
 
       if (vis >= MIN_VISIBILITY) {
         samples.push({
@@ -114,10 +116,15 @@ export async function detectCheckpoints(
   }
 
   const handsYRaw = samples.map((s) => s.handsY);
+  const handsXRaw = samples.map((s) => s.handsX);
   const handsYSmooth = movingAverage(handsYRaw, SMOOTH_WINDOW);
+  const handsXSmooth = movingAverage(handsXRaw, SMOOTH_WINDOW);
   const dy = derivative(handsYSmooth);
+  const dx = derivative(handsXSmooth);
 
-  const results = findPhases(samples, handsYSmooth, dy);
+  const results = cameraAngle === "DOWN_THE_LINE"
+    ? findPhasesDownTheLine(samples, handsYSmooth, handsXSmooth, dy, dx)
+    : findPhases(samples, handsYSmooth, dy);
   return results;
 }
 
@@ -252,6 +259,112 @@ function findPhases(
     if (!found.has(p)) {
       throw new Error(`Could not detect swing phase: ${p}`);
     }
+  }
+
+  return checkpoints;
+}
+
+// DTL-specific phase detection using horizontal (X) hand motion as primary signal.
+// From behind, hands sweep left→right during backswing and right→left through impact,
+// making X-displacement far more reliable than Y for phase timing.
+function findPhasesDownTheLine(
+  samples: LandmarkSample[],
+  handsY: number[],
+  handsX: number[],
+  dy: number[],
+  dx: number[]
+): CheckpointResult[] {
+  const n = samples.length;
+  const checkpoints: CheckpointResult[] = [];
+
+  // Address: most stable X window in first 50%
+  const STABLE_WINDOW = Math.max(5, Math.floor(n * 0.08));
+  let addressIdx = 0;
+  let minVar = Infinity;
+  for (let i = 0; i < Math.floor(n * 0.5); i++) {
+    const win = handsX.slice(i, i + STABLE_WINDOW);
+    if (win.length < STABLE_WINDOW) break;
+    const v = stdDev(win);
+    if (v < minVar) { minVar = v; addressIdx = i + Math.floor(STABLE_WINDOW / 2); }
+  }
+  const addressX = handsX[addressIdx];
+
+  checkpoints.push({
+    phase: "ADDRESS",
+    timestampMs: samples[addressIdx].timestampMs,
+    confidence: Math.min(1, samples[addressIdx].visibility),
+  });
+
+  // Takeaway: first X movement > 3% of frame from address
+  let takeawayIdx = addressIdx + 1;
+  for (let i = addressIdx + 1; i < Math.floor(n * 0.7); i++) {
+    if (Math.abs(handsX[i] - addressX) > 0.03) { takeawayIdx = i; break; }
+  }
+  checkpoints.push({
+    phase: "TAKEAWAY",
+    timestampMs: samples[takeawayIdx].timestampMs,
+    confidence: Math.min(1, samples[takeawayIdx].visibility),
+  });
+
+  // Top of backswing: maximum X displacement from address (hands furthest from center)
+  const backswingDir = handsX[Math.floor(n * 0.5)] > addressX ? 1 : -1;
+  let topIdx = takeawayIdx + 1;
+  let maxDisp = 0;
+  for (let i = takeawayIdx + 1; i < Math.floor(n * 0.85); i++) {
+    const disp = (handsX[i] - addressX) * backswingDir;
+    if (disp > maxDisp) { maxDisp = disp; topIdx = i; }
+  }
+  checkpoints.push({
+    phase: "TOP_OF_BACKSWING",
+    timestampMs: samples[topIdx].timestampMs,
+    confidence: Math.min(1, samples[topIdx].visibility),
+  });
+
+  // Downswing: after top, when X velocity back toward address exceeds 30% of peak
+  const downVels = dx.slice(topIdx).map((v) => Math.abs(v));
+  const peakDownVel = Math.max(...downVels, 0.001);
+  let downswingIdx = topIdx + 1;
+  for (let i = topIdx + 1; i < n; i++) {
+    if (Math.abs(dx[i]) >= peakDownVel * 0.30) { downswingIdx = i; break; }
+  }
+  checkpoints.push({
+    phase: "DOWNSWING_TRANSITION",
+    timestampMs: samples[downswingIdx].timestampMs,
+    confidence: Math.min(1, samples[downswingIdx].visibility),
+  });
+
+  // Impact: X closest to addressX after top (hands return to starting position)
+  let impactIdx = downswingIdx + 1;
+  let minDistToAddr = Infinity;
+  for (let i = downswingIdx + 1; i < n; i++) {
+    const dist = Math.abs(handsX[i] - addressX);
+    if (dist < minDistToAddr) { minDistToAddr = dist; impactIdx = i; }
+  }
+  checkpoints.push({
+    phase: "IMPACT",
+    timestampMs: samples[impactIdx].timestampMs,
+    confidence: Math.min(1, samples[impactIdx].visibility),
+  });
+
+  // Follow-through: furthest point past address X (opposite side from backswing)
+  let followIdx = Math.min(impactIdx + 3, n - 1);
+  let maxFollowDisp = 0;
+  for (let i = impactIdx + 1; i < n; i++) {
+    const disp = (handsX[i] - addressX) * -backswingDir;
+    if (disp > maxFollowDisp) { maxFollowDisp = disp; followIdx = i; }
+  }
+  if (followIdx === Math.min(impactIdx + 3, n - 1)) {
+    followIdx = Math.min(impactIdx + Math.floor((n - impactIdx) * 0.7), n - 1);
+  }
+  checkpoints.push({
+    phase: "FOLLOW_THROUGH",
+    timestampMs: samples[followIdx].timestampMs,
+    confidence: Math.min(1, samples[followIdx].visibility),
+  });
+
+  const found = new Set(checkpoints.map((c) => c.phase));
+  for (const p of [...SWING_PHASES]) {
+    if (!found.has(p)) throw new Error(`Could not detect swing phase: ${p}`);
   }
 
   return checkpoints;
