@@ -91,7 +91,7 @@ export default function ExercisesPage() {
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
-    <main className="min-h-screen bg-green-950 text-white p-6 pb-24">
+    <main className="min-h-screen bg-green-950/75 text-white p-6 pb-24">
       <div className="max-w-lg mx-auto flex flex-col gap-6">
         <AppHeader title={t.exercisesTitle} />
 

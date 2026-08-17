@@ -117,7 +117,7 @@ function RecordPageInner() {
     : "Nieuwe ijzerswing";
 
   return (
-    <main className="min-h-screen bg-green-950 text-white p-6">
+    <main className="min-h-screen bg-green-950/75 text-white p-6">
       <div className="max-w-sm mx-auto flex flex-col gap-6">
         <AppHeader backHref={backHref} backLabel={existingSwingId ? "Terug naar swing" : "Dashboard"} title={title} />
 

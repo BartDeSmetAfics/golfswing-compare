@@ -17,7 +17,7 @@ export default async function DashboardPage() {
   const swingsForClient = swings.map((s) => ({ ...s, createdAt: s.createdAt.toISOString() }));
 
   return (
-    <main className="min-h-screen bg-green-950 text-white p-6 pb-24">
+    <main className="min-h-screen bg-green-950/75 text-white p-6 pb-24">
       <div className="max-w-2xl mx-auto">
         <AppHeader />
 

@@ -117,7 +117,7 @@ export default function SettingsPage() {
   };
 
   return (
-    <main className="min-h-screen bg-green-950 text-white p-6 pb-16">
+    <main className="min-h-screen bg-green-950/75 text-white p-6 pb-16">
       <div className="max-w-lg mx-auto flex flex-col gap-6">
         <AppHeader backHref="/profile" backLabel={t.yourProfile} title={t.settings} />
 

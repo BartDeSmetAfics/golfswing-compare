@@ -97,7 +97,7 @@ export default function SwingDetailPage() {
 
   if (loading) {
     return (
-      <main className="min-h-screen bg-green-950 flex items-center justify-center">
+      <main className="min-h-screen bg-green-950/75 flex items-center justify-center">
         <div className="w-8 h-8 border-4 border-green-500 border-t-transparent rounded-full animate-spin" />
       </main>
     );
@@ -105,7 +105,7 @@ export default function SwingDetailPage() {
 
   if (loadError !== null || !swing) {
     return (
-      <main className="min-h-screen bg-green-950 text-white p-6 flex flex-col items-center justify-center gap-4">
+      <main className="min-h-screen bg-green-950/75 text-white p-6 flex flex-col items-center justify-center gap-4">
         <p className="text-red-400">{t.swingLoadError}</p>
         {loadError && (
           <p className="text-red-600 text-xs font-mono bg-black/30 rounded px-3 py-2 max-w-sm text-center break-all">{loadError}</p>
@@ -141,7 +141,7 @@ export default function SwingDetailPage() {
     : null;
 
   return (
-    <main className="min-h-screen bg-green-950 text-white p-6 pb-16">
+    <main className="min-h-screen bg-green-950/75 text-white p-6 pb-16">
       <div className="max-w-2xl mx-auto flex flex-col gap-6">
         <AppHeader backHref="/" backLabel={t.back} title={`${swing.clubType.toLowerCase()} swing`} />
 

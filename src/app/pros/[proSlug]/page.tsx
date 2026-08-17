@@ -93,7 +93,7 @@ export default function ProDetailPage() {
 
   if (loadingPro) {
     return (
-      <main className="min-h-screen bg-green-950 flex items-center justify-center">
+      <main className="min-h-screen bg-green-950/75 flex items-center justify-center">
         <div className="w-8 h-8 border-4 border-green-500 border-t-transparent rounded-full animate-spin" />
       </main>
     );
@@ -101,7 +101,7 @@ export default function ProDetailPage() {
 
   if (!pro) {
     return (
-      <main className="min-h-screen bg-green-950 text-white p-6 flex items-center justify-center">
+      <main className="min-h-screen bg-green-950/75 text-white p-6 flex items-center justify-center">
         <p className="text-green-400">{t.proNotFound}</p>
       </main>
     );
@@ -114,7 +114,7 @@ export default function ProDetailPage() {
       : parts[0].slice(0, 2).toUpperCase();
 
   return (
-    <main className="min-h-screen bg-green-950 text-white p-6 pb-24">
+    <main className="min-h-screen bg-green-950/75 text-white p-6 pb-24">
       <div className="max-w-lg mx-auto flex flex-col gap-6">
         <AppHeader backHref="/pros" backLabel={t.navPros} />
 
